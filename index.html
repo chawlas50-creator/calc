@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pixel Calculator</title>
+
+<style>
+body{background:#000;margin:0;font-family:-apple-system;color:white}
+.display{background:#2b262b;padding:30px 20px;font-size:40px;border-bottom-left-radius:25px;border-bottom-right-radius:25px;text-align:right}
+.container{padding:10px}
+.row{display:flex;justify-content:space-between;margin:10px 0}
+button{width:70px;height:70px;border-radius:50%;border:none;font-size:22px;color:white;background:#1b1b1b}
+.operator{background:#5c525c}
+.top{background:#4b404b}
+button:active{transform:scale(0.95)}
+</style>
+</head>
+
+<body>
+
+<div class="display" id="input">0</div>
+
+<div class="container">
+
+<div class="row">
+<button class="top" onclick="press('√(')">√</button>
+<button class="top" onclick="press('π')">π</button>
+<button class="top" onclick="press('^')">^</button>
+<button class="top" onclick="press('!')">!</button>
+</div>
+
+<div class="row">
+<button class="top" onclick="clearAll()">AC</button>
+<button class="top" onclick="press('(')">(</button>
+<button class="top" onclick="press(')')">)</button>
+<button class="operator" onclick="press('/')">÷</button>
+</div>
+
+<div class="row">
+<button onclick="press('7')">7</button>
+<button onclick="press('8')">8</button>
+<button onclick="press('9')">9</button>
+<button class="operator" onclick="press('*')">×</button>
+</div>
+
+<div class="row">
+<button onclick="press('4')">4</button>
+<button onclick="press('5')">5</button>
+<button onclick="press('6')">6</button>
+<button class="operator" onclick="press('-')">−</button>
+</div>
+
+<div class="row">
+<button onclick="press('1')">1</button>
+<button onclick="press('2')">2</button>
+<button onclick="press('3')">3</button>
+<button class="operator" onclick="press('+')">+</button>
+</div>
+
+<div class="row">
+<button onclick="press('0')">0</button>
+<button onclick="press('.')">.</button>
+<button onclick="back()">⌫</button>
+<button class="operator" onclick="calculate()">=</button>
+</div>
+
+</div>
+
+<script>
+let input="";
+function press(v){input+=v;document.getElementById("input").innerText=input}
+function clearAll(){input="";document.getElementById("input").innerText="0"}
+function back(){input=input.slice(0,-1);document.getElementById("input").innerText=input||"0"}
+function calculate(){
+try{
+let exp=input.replace(/π/g,Math.PI).replace(/√/g,"Math.sqrt").replace(/\^/g,"**");
+document.getElementById("input").innerText=eval(exp)
+}catch{document.getElementById("input").innerText="Error"}
+}
+</script>
+
+</body>
+</html>
