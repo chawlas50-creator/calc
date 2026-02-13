@@ -14,8 +14,6 @@ html, body {
   overflow:hidden;
 }
 
-/* MAIN LAYOUT */
-
 .calculator {
   position:fixed;
   inset:0;
@@ -23,13 +21,13 @@ html, body {
   flex-direction:column;
 }
 
-/* DISPLAY — FIXED HEIGHT */
+/* DISPLAY */
 
 .display {
   background:#2b262b;
   padding:22px 20px;
   text-align:right;
-  height:24vh;
+  height:25vh;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
@@ -45,24 +43,23 @@ html, body {
   margin-top:6px;
 }
 
-/* KEYPAD — CONTENT HEIGHT */
+/* KEYPAD */
 
 .keypad {
+  flex:1;
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:10px;
-  padding:12px;
-  align-content:start;
+  padding:18px 18px 28px 18px;
 }
 
-
-/* BUTTONS */
+/* BUTTONS (slightly smaller) */
 
 button {
   aspect-ratio:1/1;
   border-radius:50%;
   border:none;
-  font-size:24px;
+  font-size:22px;
   color:white;
   background:#1b1b1b;
 }
@@ -71,14 +68,7 @@ button {
 .top { background:#4b404b; }
 
 button:active { transform:scale(0.95); }
-
-/* BOTTOM SAFE SPACE */
-
-.bottom-space {
-  height:70px;
-}
 </style>
-
 </head>
 
 <body>
@@ -124,8 +114,6 @@ button:active { transform:scale(0.95); }
 
   </div>
 
-  <div class="bottom-space"></div>
-
 </div>
 
 <script>
@@ -154,6 +142,8 @@ function updateDisplay(){
   document.getElementById("input").innerText = input || "0";
 }
 
+/* IMPLICIT MULTIPLICATION */
+
 function formatExpression(exp){
   exp = exp.replace(/π/g,Math.PI);
   exp = exp.replace(/√/g,"Math.sqrt");
@@ -162,6 +152,8 @@ function formatExpression(exp){
   exp = exp.replace(/(\d)π/g,"$1*Math.PI");
   return exp;
 }
+
+/* LIVE RESULT */
 
 function liveCalculate(){
   try{
@@ -188,6 +180,8 @@ function calculate(){
     document.getElementById("input").innerText="Error";
   }
 }
+
+/* SIGN TOGGLE */
 
 function toggleSign(){
   if(!input) return;
