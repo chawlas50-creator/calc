@@ -50,12 +50,11 @@ html, body {
 /* KEYPAD */
 
 .keypad {
-  flex:0 0 74%;  /* slightly reduced from full height */
+  flex:1;
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:10px;  /* original spacing restored */
+  gap:10px;
   padding:12px;
-  margin-bottom:14px; /* bottom breathing space */
 }
 
 button {
@@ -71,6 +70,12 @@ button {
 .top { background:#4b404b; }
 
 button:active { transform:scale(0.95); }
+
+/* BOTTOM SPACER */
+
+.bottom-space {
+  height:8px;
+}
 </style>
 </head>
 
@@ -116,6 +121,8 @@ button:active { transform:scale(0.95); }
     <button class="operator" onclick="calculate()">=</button>
 
   </div>
+
+  <div class="bottom-space"></div>
 
 </div>
 
