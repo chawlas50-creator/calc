@@ -83,7 +83,7 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <input class="mainInput" id="input" value=""/>
+    <input class="mainInput" id="input" value="" inputmode="none">
     <div class="preview" id="preview"></div>
   </div>
 
@@ -126,25 +126,33 @@ button:active { transform:scale(0.95); }
 <script>
 
 let input = "";
+const field = document.getElementById("input");
 
-/* PREVENT iOS KEYBOARD */
+/* prevent keyboard but allow caret */
+field.addEventListener("focus", () => {
+  setTimeout(()=> field.blur(), 0);
+});
 
-document.getElementById("input").addEventListener("focus", function(e){
-  e.target.blur();
+/* place caret exactly where user taps */
+field.addEventListener("click", function(e){
+  let rect = field.getBoundingClientRect();
+  let clickX = e.clientX - rect.left;
+  let text = field.value;
+
+  let pos = Math.round((clickX / rect.width) * text.length);
+  field.setSelectionRange(pos, pos);
 });
 
 /* BUTTON INSERT AT CURSOR */
 
 function press(val){
-  let field = document.getElementById("input");
   let start = field.selectionStart || 0;
   let end = field.selectionEnd || 0;
 
   input = field.value;
-
   input = input.slice(0,start) + val + input.slice(end);
-  field.value = input;
 
+  field.value = input;
   field.setSelectionRange(start + val.length, start + val.length);
 
   liveCalculate();
@@ -154,14 +162,13 @@ function press(val){
 
 function clearAll(){
   input="";
-  document.getElementById("input").value="";
+  field.value="";
   document.getElementById("preview").innerText="";
 }
 
 /* BACKSPACE FROM CURSOR */
 
 function back(){
-  let field = document.getElementById("input");
   let start = field.selectionStart || 0;
   let end = field.selectionEnd || 0;
 
@@ -214,17 +221,16 @@ function calculate(){
     let exp = formatExpression(input).replace(/\^/g,"**");
     let result = eval(exp);
     input = result.toString();
-    document.getElementById("input").value = input;
+    field.value = input;
     document.getElementById("preview").innerText="";
   }catch{
-    document.getElementById("input").value="Error";
+    field.value="Error";
   }
 }
 
 /* SIGN TOGGLE */
 
 function toggleSign(){
-  let field = document.getElementById("input");
   input = field.value;
 
   let match = input.match(/(-?\d+\.?\d*)$/);
