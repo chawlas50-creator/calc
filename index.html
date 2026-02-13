@@ -14,16 +14,6 @@ html, body {
   overflow:hidden;
 }
 
-.mainInput {
-  font-size:40px;
-  background:transparent;
-  border:none;
-  color:white;
-  text-align:right;
-  width:100%;
-  outline:none;
-}
-
 .calculator {
   position:fixed;
   inset:0;
@@ -45,6 +35,13 @@ html, body {
 
 .mainInput {
   font-size:40px;
+  background:transparent;
+  border:none;
+  color:white;
+  text-align:right;
+  width:100%;
+  outline:none;
+  caret-color:white;
 }
 
 .preview {
@@ -63,7 +60,7 @@ html, body {
   padding:6px 18px 28px 18px;
 }
 
-/* BUTTONS (slightly smaller) */
+/* BUTTONS */
 
 button {
   aspect-ratio:1/1;
@@ -86,7 +83,7 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <input class="mainInput" id="input" value="0" readonly />
+    <input class="mainInput" id="input" value=""/>
     <div class="preview" id="preview"></div>
   </div>
 
@@ -130,15 +127,22 @@ button:active { transform:scale(0.95); }
 
 let input = "";
 
+/* PREVENT iOS KEYBOARD */
+
+document.getElementById("input").addEventListener("focus", function(e){
+  e.target.blur();
+});
+
+/* BUTTON INSERT AT CURSOR */
+
 function press(val){
   let field = document.getElementById("input");
-  let start = field.selectionStart;
-  let end = field.selectionEnd;
+  let start = field.selectionStart || 0;
+  let end = field.selectionEnd || 0;
 
   input = field.value;
 
   input = input.slice(0,start) + val + input.slice(end);
-
   field.value = input;
 
   field.setSelectionRange(start + val.length, start + val.length);
@@ -146,17 +150,20 @@ function press(val){
   liveCalculate();
 }
 
+/* CLEAR */
 
 function clearAll(){
   input="";
-  updateDisplay();
+  document.getElementById("input").value="";
   document.getElementById("preview").innerText="";
 }
 
+/* BACKSPACE FROM CURSOR */
+
 function back(){
   let field = document.getElementById("input");
-  let start = field.selectionStart;
-  let end = field.selectionEnd;
+  let start = field.selectionStart || 0;
+  let end = field.selectionEnd || 0;
 
   input = field.value;
 
@@ -172,13 +179,6 @@ function back(){
 
   liveCalculate();
 }
-
-}
-
-function updateDisplay(){
-  document.getElementById("input").value = input || "";
-}
-
 
 /* IMPLICIT MULTIPLICATION */
 
@@ -207,22 +207,25 @@ function liveCalculate(){
   }
 }
 
+/* FINAL RESULT */
+
 function calculate(){
   try{
     let exp = formatExpression(input).replace(/\^/g,"**");
     let result = eval(exp);
     input = result.toString();
-    updateDisplay();
+    document.getElementById("input").value = input;
     document.getElementById("preview").innerText="";
   }catch{
-    document.getElementById("input").innerText="Error";
+    document.getElementById("input").value="Error";
   }
 }
 
 /* SIGN TOGGLE */
 
 function toggleSign(){
-  if(!input) return;
+  let field = document.getElementById("input");
+  input = field.value;
 
   let match = input.match(/(-?\d+\.?\d*)$/);
 
@@ -237,7 +240,7 @@ function toggleSign(){
     input = "-"+input;
   }
 
-  updateDisplay();
+  field.value = input;
   liveCalculate();
 }
 
