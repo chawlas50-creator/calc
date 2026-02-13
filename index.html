@@ -11,12 +11,10 @@ html, body {
   background:#000;
   font-family:-apple-system;
   color:white;
-  touch-action: manipulation;
-  overscroll-behavior:none;
-  -webkit-user-select:none;
-  user-select:none;
   overflow:hidden;
 }
+
+/* MAIN LAYOUT */
 
 .calculator {
   position:fixed;
@@ -25,13 +23,13 @@ html, body {
   flex-direction:column;
 }
 
-/* DISPLAY (UNCHANGED) */
+/* DISPLAY — FIXED HEIGHT */
 
 .display {
   background:#2b262b;
   padding:22px 20px;
   text-align:right;
-  flex:0 0 22%;
+  height:22vh;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
@@ -47,15 +45,16 @@ html, body {
   margin-top:6px;
 }
 
-/* KEYPAD */
+/* KEYPAD — CONTENT HEIGHT */
 
 .keypad {
-  flex:0 0 auto;
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:10px;
   padding:12px;
 }
+
+/* BUTTONS */
 
 button {
   aspect-ratio:1/1;
@@ -71,12 +70,13 @@ button {
 
 button:active { transform:scale(0.95); }
 
-/* BOTTOM SPACER */
+/* BOTTOM SAFE SPACE */
 
 .bottom-space {
-  height:70px;
+  height:14px;
 }
 </style>
+
 </head>
 
 <body>
