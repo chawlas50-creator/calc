@@ -6,8 +6,8 @@
 
 <style>
 html, body {
-  height:100%;
   margin:0;
+  height:100%;
   background:#000;
   font-family:-apple-system;
   color:white;
@@ -27,42 +27,36 @@ html, body {
 
 .display {
   background:#2b262b;
-  padding:35px 20px 20px 20px;
+  padding:25px 20px;
   text-align:right;
-  flex:0 0 30%;
+  flex:0 0 24%;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
 }
 
 .mainInput {
-  font-size:46px;
+  font-size:42px;
 }
 
 .preview {
-  font-size:28px;
+  font-size:26px;
   opacity:0.7;
   margin-top:6px;
 }
 
-/* BUTTON AREA */
+/* KEYPAD GRID */
 
 .keypad {
   flex:1;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-evenly;
-  padding:8px;
-}
-
-.row {
-  display:flex;
-  justify-content:space-evenly;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:12px;
 }
 
 button {
-  width:82px;
-  height:82px;
+  aspect-ratio:1/1;
   border-radius:50%;
   border:none;
   font-size:24px;
@@ -70,17 +64,10 @@ button {
   background:#1b1b1b;
 }
 
-.operator {
-  background:#5c525c;
-}
+.operator { background:#5c525c; }
+.top { background:#4b404b; }
 
-.top {
-  background:#4b404b;
-}
-
-button:active {
-  transform:scale(0.95);
-}
+button:active { transform:scale(0.95); }
 </style>
 </head>
 
@@ -95,46 +82,35 @@ button:active {
 
   <div class="keypad">
 
-    <div class="row">
-      <button class="top" onclick="press('√(')">√</button>
-      <button class="top" onclick="press('π')">π</button>
-      <button class="top" onclick="press('^')">^</button>
-      <button class="top" onclick="clearAll()">AC</button>
-    </div>
+    <button class="top" onclick="press('√(')">√</button>
+    <button class="top" onclick="press('π')">π</button>
+    <button class="top" onclick="press('^')">^</button>
+    <button class="top" onclick="clearAll()">AC</button>
 
-    <div class="row">
-      <button class="top" onclick="press('(')">(</button>
-      <button class="top" onclick="press(')')">)</button>
-      <button class="operator" onclick="press('/')">÷</button>
-      <button class="operator" onclick="back()">⌫</button>
-    </div>
+    <button class="top" onclick="press('(')">(</button>
+    <button class="top" onclick="press(')')">)</button>
+    <button class="operator" onclick="press('/')">÷</button>
+    <button class="operator" onclick="back()">⌫</button>
 
-    <div class="row">
-      <button onclick="press('7')">7</button>
-      <button onclick="press('8')">8</button>
-      <button onclick="press('9')">9</button>
-      <button class="operator" onclick="press('*')">×</button>
-    </div>
+    <button onclick="press('7')">7</button>
+    <button onclick="press('8')">8</button>
+    <button onclick="press('9')">9</button>
+    <button class="operator" onclick="press('*')">×</button>
 
-    <div class="row">
-      <button onclick="press('4')">4</button>
-      <button onclick="press('5')">5</button>
-      <button onclick="press('6')">6</button>
-      <button class="operator" onclick="press('-')">−</button>
-    </div>
+    <button onclick="press('4')">4</button>
+    <button onclick="press('5')">5</button>
+    <button onclick="press('6')">6</button>
+    <button class="operator" onclick="press('-')">−</button>
 
-    <div class="row">
-      <button onclick="press('1')">1</button>
-      <button onclick="press('2')">2</button>
-      <button onclick="press('3')">3</button>
-      <button class="operator" onclick="press('+')">+</button>
-    </div>
+    <button onclick="press('1')">1</button>
+    <button onclick="press('2')">2</button>
+    <button onclick="press('3')">3</button>
+    <button class="operator" onclick="press('+')">+</button>
 
-    <div class="row">
-      <button onclick="press('0')">0</button>
-      <button onclick="press('.')">.</button>
-      <button class="operator" onclick="calculate()">=</button>
-    </div>
+    <button onclick="toggleSign()">±</button>
+    <button onclick="press('0')">0</button>
+    <button onclick="press('.')">.</button>
+    <button class="operator" onclick="calculate()">=</button>
 
   </div>
 
@@ -144,7 +120,7 @@ button:active {
 
 let input = "";
 
-/* PRESS */
+/* BUTTON INPUT */
 
 function press(val){
   input += val;
@@ -168,7 +144,7 @@ function back(){
   liveCalculate();
 }
 
-/* UPDATE MAIN DISPLAY */
+/* DISPLAY */
 
 function updateDisplay(){
   document.getElementById("input").innerText = input || "0";
@@ -217,6 +193,28 @@ function calculate(){
   }catch{
     document.getElementById("input").innerText="Error";
   }
+}
+
+/* SIGN TOGGLE */
+
+function toggleSign(){
+  if(!input) return;
+
+  let match = input.match(/(-?\d+\.?\d*)$/);
+
+  if(match){
+    let number = match[0];
+    let flipped = number.startsWith("-")
+      ? number.slice(1)
+      : "-"+number;
+
+    input = input.replace(/(-?\d+\.?\d*)$/, flipped);
+  } else {
+    input = "-"+input;
+  }
+
+  updateDisplay();
+  liveCalculate();
 }
 
 </script>
