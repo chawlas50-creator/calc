@@ -1,86 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Pixel Calculator</title>
 
 <style>
+/* RESET & BASICS */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 html, body {
-  margin:0;
-  height:100%;
-  background:#000;
-  font-family:-apple-system;
-  color:white;
-  overflow:hidden;
+    margin: 0;
+    height: 100%;
+    background: #000;
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: white;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
 }
 
 .calculator {
-  position:fixed;
-  inset:0;
-  display:flex;
-  flex-direction:column;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* DISPLAY */
-
+/* DISPLAY AREA */
 .display {
-  background:#2b262b;
-  padding:22px 20px;
-  height:24vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-end;
+    background: #2b262b;
+    padding: 22px 20px;
+    height: 30vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
 }
 
-.mainInput {
-  font-size:40px;
-  background:transparent;
-  border:none;
-  color:white;
-  text-align:right;
-  width:100%;
-  outline:none;
-  caret-color:#8ab4f8;
-  font-family:inherit;
-  padding:0;
-  margin:0;
+/* VIRTUAL INPUT CONTAINER */
+.virtual-input-container {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Align right like a calculator */
+    height: 60px;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.virtual-input-container::-webkit-scrollbar { display: none; }
+
+/* THE TEXT CHARACTERS */
+.char {
+    font-size: 44px;
+    color: white;
+    cursor: pointer;
+    position: relative;
+    padding: 0 1px; /* Bigger touch target */
+}
+
+/* THE BLINKING CURSOR */
+.cursor {
+    width: 2px;
+    height: 44px;
+    background-color: #8ab4f8; /* Google Blue */
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    margin: 0 1px;
+    flex-shrink: 0; /* Prevent squishing */
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 .preview {
-  font-size:50px;
-  opacity:0.8;
-  margin-top:6px;
-  text-align:right;
-  min-height:60px;
+    font-size: 30px;
+    color: #9aa0a6;
+    text-align: right;
+    min-height: 40px;
+    margin-top: 10px;
+    font-weight: 300;
 }
 
 /* KEYPAD */
-
 .keypad {
-  flex:1;
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  padding:6px 18px 28px 18px;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 10px 18px 20px 18px;
 }
-
-/* BUTTONS */
 
 button {
-  aspect-ratio:1/1;
-  border-radius:50%;
-  border:none;
-  font-size:32px;
-  color:white;
-  background:#1b1b1b;
-  -webkit-tap-highlight-color:transparent;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    border: none;
+    font-size: 30px;
+    color: white;
+    background: #1b1b1b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
 }
 
-.operator { background:#5c525c; }
-.top { background:#4b404b; }
-.equals { background:#8ab4f8; color:#000; }
+.operator { background: #5c525c; }
+.top { background: #4b404b; }
+.equals { background: #8ab4f8; color: #202124; }
 
-button:active { transform:scale(0.95); }
+button:active { 
+    filter: brightness(1.2);
+    transform: scale(0.96);
+}
 </style>
 </head>
 
@@ -88,170 +129,199 @@ button:active { transform:scale(0.95); }
 
 <div class="calculator">
 
-  <div class="display">
-    <input type="text" class="mainInput" id="input" value="0" inputmode="none" spellcheck="false" autocomplete="off">
-    <div class="preview" id="preview"></div>
-  </div>
+    <div class="display" onclick="focusEnd(event)">
+        <div class="virtual-input-container" id="virtualDisplay">
+            </div>
+        <div class="preview" id="preview"></div>
+    </div>
 
-  <div class="keypad">
+    <div class="keypad">
+        <button class="top" ontouchstart="handleTap(event, 'Math.sqrt(')">√</button>
+        <button class="top" ontouchstart="handleTap(event, 'Math.PI')">π</button>
+        <button class="top" ontouchstart="handleTap(event, '^')">^</button>
+        <button class="top" ontouchstart="handleTap(event, 'AC')">AC</button>
 
-    <button class="top" onclick="press('Math.sqrt(')">√</button>
-    <button class="top" onclick="press('Math.PI')">π</button>
-    <button class="top" onclick="press('^')">^</button>
-    <button class="top" onclick="clearAll()">AC</button>
+        <button class="top" ontouchstart="handleTap(event, '(')">(</button>
+        <button class="top" ontouchstart="handleTap(event, ')')">)</button>
+        <button class="operator" ontouchstart="handleTap(event, '/')">÷</button>
+        <button class="operator" ontouchstart="handleTap(event, 'DEL')">⌫</button>
 
-    <button class="top" onclick="press('(')">(</button>
-    <button class="top" onclick="press(')')">)</button>
-    <button class="operator" onclick="press('/')">÷</button>
-    <button class="operator" onclick="back()">⌫</button>
+        <button ontouchstart="handleTap(event, '7')">7</button>
+        <button ontouchstart="handleTap(event, '8')">8</button>
+        <button ontouchstart="handleTap(event, '9')">9</button>
+        <button class="operator" ontouchstart="handleTap(event, '*')">×</button>
 
-    <button onclick="press('7')">7</button>
-    <button onclick="press('8')">8</button>
-    <button onclick="press('9')">9</button>
-    <button class="operator" onclick="press('*')">×</button>
+        <button ontouchstart="handleTap(event, '4')">4</button>
+        <button ontouchstart="handleTap(event, '5')">5</button>
+        <button ontouchstart="handleTap(event, '6')">6</button>
+        <button class="operator" ontouchstart="handleTap(event, '-')">−</button>
 
-    <button onclick="press('4')">4</button>
-    <button onclick="press('5')">5</button>
-    <button onclick="press('6')">6</button>
-    <button class="operator" onclick="press('-')">−</button>
+        <button ontouchstart="handleTap(event, '1')">1</button>
+        <button ontouchstart="handleTap(event, '2')">2</button>
+        <button ontouchstart="handleTap(event, '3')">3</button>
+        <button class="operator" ontouchstart="handleTap(event, '+')">+</button>
 
-    <button onclick="press('1')">1</button>
-    <button onclick="press('2')">2</button>
-    <button onclick="press('3')">3</button>
-    <button class="operator" onclick="press('+')">+</button>
-
-    <button onclick="toggleSign()">±</button>
-    <button onclick="press('0')">0</button>
-    <button onclick="press('.')">.</button>
-    <button class="equals" onclick="calculate()">=</button>
-
-  </div>
+        <button ontouchstart="handleTap(event, 'SIGN')">±</button>
+        <button ontouchstart="handleTap(event, '0')">0</button>
+        <button ontouchstart="handleTap(event, '.')">.</button>
+        <button class="equals" ontouchstart="handleTap(event, '=')">=</button>
+    </div>
 
 </div>
 
 <script>
 
-const display = document.getElementById("input");
+// STATE
+let inputData = "0"; // The raw string
+let cursorIndex = 1; // Position of cursor (0 = start, length = end)
+
+const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
 
-/* Prevent zoom */
-document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
+// INITIAL RENDER
+render();
 
-/* TRUE CARET POSITIONING (character-level) */
-display.addEventListener("click", function(e) {
+// Prevent default tap behavior (zooming, selection)
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
-  const mirror = document.createElement("span");
-  mirror.style.position = "absolute";
-  mirror.style.visibility = "hidden";
-  mirror.style.whiteSpace = "pre";
-  mirror.style.font = window.getComputedStyle(display).font;
+// BUTTON HANDLER
+function handleTap(e, val) {
+    e.preventDefault(); // Stop ghost clicks
+    
+    // Haptic feedback (if supported)
+    if (navigator.vibrate) navigator.vibrate(5);
 
-  document.body.appendChild(mirror);
-
-  const text = display.value;
-  let pos = text.length;
-
-  for (let i = 0; i <= text.length; i++) {
-    mirror.textContent = text.substring(0, i);
-    if (mirror.offsetWidth >= e.offsetX) {
-      pos = i;
-      break;
+    if (val === 'AC') {
+        inputData = "0";
+        cursorIndex = 1;
+    } 
+    else if (val === 'DEL') {
+        if (cursorIndex > 0) {
+            // Remove char BEFORE cursor
+            inputData = inputData.slice(0, cursorIndex - 1) + inputData.slice(cursorIndex);
+            cursorIndex--;
+            if (inputData === "") {
+                inputData = "0";
+                cursorIndex = 1;
+            }
+        }
+    } 
+    else if (val === '=') {
+        calculate(true);
+        return; // Render handled in calculate
+    } 
+    else if (val === 'SIGN') {
+        // Simple toggle at start
+        if (inputData.startsWith('-')) {
+            inputData = inputData.substring(1);
+            if(cursorIndex > 0) cursorIndex--;
+        } else {
+            inputData = '-' + inputData;
+            cursorIndex++;
+        }
+    } 
+    else {
+        // Insert character at cursor
+        if (inputData === "0" && !isNaN(val) && val !== '.') {
+            inputData = val; // Replace initial 0
+            cursorIndex = val.length;
+        } else {
+            inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex);
+            cursorIndex += val.length;
+        }
     }
-  }
 
-  display.setSelectionRange(pos, pos);
-  display.focus();
-  document.body.removeChild(mirror);
-});
-
-function press(val){
-  const start = display.selectionStart;
-  const end = display.selectionEnd;
-  const currentValue = display.value;
-
-  if (currentValue === "0" && !isNaN(val) && val !== '.') {
-     display.value = val;
-     display.setSelectionRange(1,1);
-  } else {
-     display.value = currentValue.slice(0,start) + val + currentValue.slice(end);
-     display.setSelectionRange(start + val.length, start + val.length);
-  }
-
-  display.focus();
-  liveCalculate();
+    render();
+    if (val !== '=') liveCalculate();
 }
 
-function clearAll(){
-  display.value = "0";
-  preview.innerText = "";
-  display.focus();
-}
+// RENDER ENGINE (The Magic Part)
+function render() {
+    let html = "";
+    const chars = inputData.split('');
 
-function back(){
-  const start = display.selectionStart;
-  const end = display.selectionEnd;
-  const currentValue = display.value;
-
-  if (start !== end) {
-      display.value = currentValue.slice(0,start) + currentValue.slice(end);
-      display.setSelectionRange(start,start);
-  } 
-  else if (start > 0) {
-      display.value = currentValue.slice(0,start-1) + currentValue.slice(start);
-      display.setSelectionRange(start-1,start-1);
-  }
-
-  if(display.value === "") display.value = "0";
-
-  display.focus();
-  liveCalculate();
-}
-
-function formatExpression(exp){
-  exp = exp.replace(/×/g,"*");
-  exp = exp.replace(/÷/g,"/");
-  exp = exp.replace(/−/g,"-");
-  exp = exp.replace(/(\d)\(/g,"$1*(");
-  exp = exp.replace(/\)(\d)/g,")*$1");
-  return exp;
-}
-
-function liveCalculate(){
-  try{
-    let val = display.value;
-    if(!val || val==="0"){ preview.innerText=""; return; }
-
-    let exp = formatExpression(val).replace(/\^/g,"**");
-    let result = eval(exp);
-
-    if(result!==undefined && result!==Infinity && !isNaN(result)){
-      preview.innerText =
-      Number(result).toLocaleString(undefined,{maximumFractionDigits:10});
+    // If cursor is at start (0), add it first
+    if (cursorIndex === 0) {
+        html += `<span class="cursor"></span>`;
     }
-  }catch{ preview.innerText=""; }
+
+    chars.forEach((char, index) => {
+        // Wrap every char in a span that sets cursor AFTER it when clicked
+        // We use index+1 because clicking a char puts cursor after it
+        html += `<span class="char" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
+        
+        // If cursor is right after this char, add it
+        if (index + 1 === cursorIndex) {
+            html += `<span class="cursor"></span>`;
+        }
+    });
+
+    container.innerHTML = html;
+    
+    // Auto-scroll to keep cursor in view
+    const cursorEl = container.querySelector('.cursor');
+    if (cursorEl) {
+        cursorEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
 }
 
-function calculate(){
-  try{
-    let exp = formatExpression(display.value).replace(/\^/g,"**");
-    let result = eval(exp);
-
-    display.value = result.toString();
-    preview.innerText="";
-    display.focus();
-  }catch{
-    display.value="Error";
-    setTimeout(()=> display.value="0",1500);
-  }
+// CLICK HANDLING
+function moveCursor(newIndex, e) {
+    e.stopPropagation(); // Stop bubbling to container
+    cursorIndex = newIndex;
+    render();
 }
 
-function toggleSign(){
-  let val = display.value;
-  if(val.startsWith("-")) display.value = val.substring(1);
-  else display.value = "-"+val;
+function focusEnd(e) {
+    // If clicking empty space in display, move to end or start based on click position
+    // Simple version: just move to end
+    cursorIndex = inputData.length;
+    render();
+}
 
-  liveCalculate();
-  display.focus();
+// MATH LOGIC
+function formatExpression(exp) {
+    exp = exp.replace(/×/g, "*");
+    exp = exp.replace(/÷/g, "/");
+    exp = exp.replace(/−/g, "-");
+    exp = exp.replace(/(\d)\(/g, "$1*(");
+    exp = exp.replace(/\)(\d)/g, ")*$1");
+    return exp;
+}
+
+function liveCalculate() {
+    try {
+        let exp = formatExpression(inputData).replace(/\^/g, "**");
+        let result = eval(exp);
+        if (result !== undefined && !isNaN(result) && result !== Infinity) {
+            preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+        } else {
+            preview.innerText = "";
+        }
+    } catch {
+        preview.innerText = "";
+    }
+}
+
+function calculate(final) {
+    try {
+        let exp = formatExpression(inputData).replace(/\^/g, "**");
+        let result = eval(exp);
+        if (isNaN(result) || result === undefined) throw "Error";
+        
+        inputData = result.toString();
+        cursorIndex = inputData.length; // Move cursor to end of result
+        preview.innerText = "";
+        render();
+    } catch {
+        inputData = "Error";
+        render();
+        setTimeout(() => { 
+            inputData = "0"; 
+            cursorIndex = 1; 
+            render(); 
+        }, 1500);
+    }
 }
 
 </script>
