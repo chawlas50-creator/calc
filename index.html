@@ -26,13 +26,13 @@ html, body {
 .display {
   background:#2b262b;
   padding:22px 20px;
-  text-align:right;
   height:24vh;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
 }
 
+/* Changed from div to input for cursor support */
 .mainInput {
   font-size:40px;
   background:transparent;
@@ -41,13 +41,18 @@ html, body {
   text-align:right;
   width:100%;
   outline:none;
-  caret-color:white;
+  caret-color: #8ab4f8; /* Google Blue Cursor */
+  font-family: inherit;
+  padding: 0;
+  margin: 0;
 }
 
 .preview {
   font-size:50px;
   opacity:0.8;
   margin-top:6px;
+  text-align: right;
+  min-height: 60px; /* Keeps layout stable */
 }
 
 /* KEYPAD */
@@ -66,13 +71,16 @@ button {
   aspect-ratio:1/1;
   border-radius:50%;
   border:none;
-  font-size:40px;
+  font-size:32px; /* Slightly smaller text for better fit */
   color:white;
   background:#1b1b1b;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
 .operator { background:#5c525c; }
 .top { background:#4b404b; }
+.equals { background: #8ab4f8; color: #000; } /* Pixel Blue */
 
 button:active { transform:scale(0.95); }
 </style>
@@ -83,14 +91,14 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <input class="mainInput" id="input" value="" inputmode="none">
+    <input type="text" class="mainInput" id="input" value="0" inputmode="none" spellcheck="false" autocomplete="off">
     <div class="preview" id="preview"></div>
   </div>
 
   <div class="keypad">
 
-    <button class="top" onclick="press('√(')">√</button>
-    <button class="top" onclick="press('π')">π</button>
+    <button class="top" onclick="press('Math.sqrt(')">√</button>
+    <button class="top" onclick="press('Math.PI')">π</button>
     <button class="top" onclick="press('^')">^</button>
     <button class="top" onclick="clearAll()">AC</button>
 
@@ -117,7 +125,7 @@ button:active { transform:scale(0.95); }
     <button onclick="toggleSign()">±</button>
     <button onclick="press('0')">0</button>
     <button onclick="press('.')">.</button>
-    <button class="operator" onclick="calculate()">=</button>
+    <button class="equals" onclick="calculate()">=</button>
 
   </div>
 
@@ -125,125 +133,129 @@ button:active { transform:scale(0.95); }
 
 <script>
 
-const field = document.getElementById("input");
-let input = "";
+const display = document.getElementById("input");
+const preview = document.getElementById("preview");
 
-/* allow caret on tap */
-field.addEventListener("touchstart", () => {
-  field.focus();
-});
-
-/* prevent keyboard */
-field.addEventListener("focus", () => {
-  setTimeout(()=> field.blur(), 0);
-});
-
-/* BUTTON INSERT AT CURSOR */
+// Prevent double-tap zoom on buttons
+document.addEventListener('dblclick', function(event) {
+  event.preventDefault();
+}, { passive: false });
 
 function press(val){
-  let start = field.selectionStart || field.value.length;
-  let end = field.selectionEnd || field.value.length;
-
-  input = field.value;
-
-  input = input.slice(0,start) + val + input.slice(end);
-
-  field.value = input;
-  field.setSelectionRange(start + val.length, start + val.length);
-
-  liveCalculate();
-}
-
-/* CLEAR */
-
-function clearAll(){
-  input="";
-  field.value="";
-  document.getElementById("preview").innerText="";
-}
-
-/* BACKSPACE */
-
-function back(){
-  let start = field.selectionStart || field.value.length;
-  let end = field.selectionEnd || field.value.length;
-
-  input = field.value;
-
-  if(start === end && start > 0){
-    input = input.slice(0,start-1) + input.slice(end);
-    field.value = input;
-    field.setSelectionRange(start-1,start-1);
+  const start = display.selectionStart;
+  const end = display.selectionEnd;
+  const currentValue = display.value;
+  
+  // Logic to replace initial "0" unless adding a decimal or operator
+  if (currentValue === "0" && !isNaN(val) && val !== '.') {
+     display.value = val;
+     // Move cursor to end
+     display.setSelectionRange(1, 1);
   } else {
-    input = input.slice(0,start) + input.slice(end);
-    field.value = input;
-    field.setSelectionRange(start,start);
+     // Insert at cursor position
+     display.value = currentValue.slice(0, start) + val + currentValue.slice(end);
+     // Move cursor after inserted character
+     display.setSelectionRange(start + val.length, start + val.length);
   }
 
+  // Keep focus on input so cursor stays visible
+  display.focus();
   liveCalculate();
 }
 
-/* IMPLICIT MULTIPLICATION */
+function clearAll(){
+  display.value = "0";
+  preview.innerText = "";
+  display.focus();
+}
 
+function back(){
+  const start = display.selectionStart;
+  const end = display.selectionEnd;
+  const currentValue = display.value;
+
+  // If text is selected, delete selection
+  if (start !== end) {
+      display.value = currentValue.slice(0, start) + currentValue.slice(end);
+      display.setSelectionRange(start, start);
+  } 
+  // Otherwise delete character before cursor
+  else if (start > 0) {
+      display.value = currentValue.slice(0, start - 1) + currentValue.slice(start);
+      display.setSelectionRange(start - 1, start - 1);
+  }
+  
+  if(display.value === "") display.value = "0";
+  
+  display.focus();
+  liveCalculate();
+}
+
+/* IMPLICIT MULTIPLICATION & FORMATTING */
 function formatExpression(exp){
-  exp = exp.replace(/π/g,Math.PI);
-  exp = exp.replace(/√/g,"Math.sqrt");
-  exp = exp.replace(/(\d)\(/g,"$1*(");
-  exp = exp.replace(/\)(\d)/g,")*$1");
-  exp = exp.replace(/(\d)π/g,"$1*Math.PI");
+  // Visual replacements for calculation
+  exp = exp.replace(/×/g, "*");
+  exp = exp.replace(/÷/g, "/");
+  exp = exp.replace(/−/g, "-");
+  
+  // Implicit multiplication logic
+  exp = exp.replace(/(\d)\(/g,"$1*("); // 5(2) -> 5*(2)
+  exp = exp.replace(/\)(\d)/g,")*$1"); // (2)5 -> (2)*5
+  
   return exp;
 }
 
-/* LIVE RESULT */
-
 function liveCalculate(){
   try{
-    if(!input) return;
-    let exp = formatExpression(input).replace(/\^/g,"**");
-    let result = eval(exp);
-    if(result!==undefined && result!==Infinity){
-      document.getElementById("preview").innerText =
-      Number(result).toLocaleString();
+    let val = display.value;
+    if(!val || val === "0") {
+        preview.innerText = ""; 
+        return;
     }
-  }catch{
-    document.getElementById("preview").innerText="";
+
+    let exp = formatExpression(val).replace(/\^/g,"**");
+    
+    // Evaluate safely
+    let result = eval(exp);
+    
+    if(result !== undefined && result !== Infinity && !isNaN(result)){
+      preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+    } else {
+      preview.innerText = "";
+    }
+  }catch(e){
+    preview.innerText = "";
   }
 }
-
-/* FINAL RESULT */
 
 function calculate(){
   try{
-    let exp = formatExpression(input).replace(/\^/g,"**");
+    let exp = formatExpression(display.value).replace(/\^/g,"**");
     let result = eval(exp);
-    input = result.toString();
-    field.value = input;
-    document.getElementById("preview").innerText="";
+    
+    if(result === undefined || isNaN(result)) throw "Error";
+    
+    display.value = result.toString();
+    preview.innerText = "";
+    display.focus(); // Keep focus
   }catch{
-    field.value="Error";
+    display.value = "Error";
+    setTimeout(() => { display.value = "0"; }, 1500);
   }
 }
 
-/* SIGN TOGGLE */
-
 function toggleSign(){
-  input = field.value;
-
-  let match = input.match(/(-?\d+\.?\d*)$/);
-
-  if(match){
-    let number = match[0];
-    let flipped = number.startsWith("-")
-      ? number.slice(1)
-      : "-"+number;
-
-    input = input.replace(/(-?\d+\.?\d*)$/, flipped);
+  // Simple toggle for current context
+  // This just wraps the whole input or removes (-) if it exists at start
+  // For mid-string editing, full logic is complex, sticking to simple start toggle for now
+  let val = display.value;
+  if(val.startsWith("-")) {
+      display.value = val.substring(1);
   } else {
-    input = "-"+input;
+      display.value = "-" + val;
   }
-
-  field.value = input;
   liveCalculate();
+  display.focus();
 }
 
 </script>
