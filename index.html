@@ -47,30 +47,30 @@ html, body {
   margin-top:6px;
 }
 
-/* KEYPAD GRID (ADJUSTED) */
+/* KEYPAD */
 
 .keypad {
-  flex:1;
+  flex:0 0 74%;  /* slightly reduced from full height */
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  padding:14px 14px 26px 14px;
+  gap:10px;  /* original spacing restored */
+  padding:12px;
+  margin-bottom:14px; /* bottom breathing space */
 }
 
 button {
   aspect-ratio:1/1;
   border-radius:50%;
   border:none;
-  font-size:23px;
+  font-size:24px;
   color:white;
   background:#1b1b1b;
-  transform:scale(0.94);
 }
 
 .operator { background:#5c525c; }
 .top { background:#4b404b; }
 
-button:active { transform:scale(0.88); }
+button:active { transform:scale(0.95); }
 </style>
 </head>
 
@@ -123,8 +123,6 @@ button:active { transform:scale(0.88); }
 
 let input = "";
 
-/* BUTTON INPUT */
-
 function press(val){
   input += val;
   updateDisplay();
@@ -147,8 +145,6 @@ function updateDisplay(){
   document.getElementById("input").innerText = input || "0";
 }
 
-/* IMPLICIT MULTIPLICATION */
-
 function formatExpression(exp){
   exp = exp.replace(/π/g,Math.PI);
   exp = exp.replace(/√/g,"Math.sqrt");
@@ -157,8 +153,6 @@ function formatExpression(exp){
   exp = exp.replace(/(\d)π/g,"$1*Math.PI");
   return exp;
 }
-
-/* LIVE RESULT */
 
 function liveCalculate(){
   try{
