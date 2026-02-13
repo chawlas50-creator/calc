@@ -1,115 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="format-detection" content="telephone=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Pixel Calculator</title>
 
 <style>
-/* 1. ALLOW SELECTION BY DEFAULT (Fixes the "can't click" bug) */
-* {
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
 html, body {
-    margin: 0;
-    height: 100%;
-    background: #000;
-    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: white;
-    overflow: hidden;
-    touch-action: manipulation;
+  margin:0;
+  height:100%;
+  background:#000;
+  font-family:-apple-system;
+  color:white;
+  overflow:hidden;
 }
 
 .calculator {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    padding-bottom: env(safe-area-inset-bottom);
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
 }
 
 /* DISPLAY */
+
 .display {
-    background: #2b262b;
-    padding: 22px 20px;
-    height: 28vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+  background:#2b262b;
+  padding:22px 20px;
+  height:24vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
 }
 
-/* 2. USE TEXTAREA FOR BETTER HIT TESTING */
 .mainInput {
-    font-size: 44px;
-    background: transparent;
-    border: none;
-    color: white;
-    text-align: right;
-    width: 100%;
-    outline: none;
-    caret-color: #8ab4f8;
-    font-family: inherit;
-    padding: 0;
-    margin: 0;
-    resize: none; /* Hide resize handle */
-    overflow: hidden;
-    white-space: nowrap;
-    
-    /* Ensure text is clickable */
-    -webkit-user-select: text;
-    user-select: text;
-    cursor: text;
+  font-size:40px;
+  background:transparent;
+  border:none;
+  color:white;
+  text-align:right;
+  width:100%;
+  outline:none;
+  caret-color:#8ab4f8;
+  font-family:inherit;
+  padding:0;
+  margin:0;
 }
 
 .preview {
-    font-size: 30px;
-    color: #9aa0a6;
-    text-align: right;
-    min-height: 40px;
-    margin-top: 10px;
-    font-weight: 300;
-    pointer-events: none; /* Let clicks pass through to input if needed */
+  font-size:50px;
+  opacity:0.8;
+  margin-top:6px;
+  text-align:right;
+  min-height:60px;
 }
 
 /* KEYPAD */
+
 .keypad {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    padding: 10px 18px 20px 18px;
-    
-    /* Only disable selection here, not globally */
-    -webkit-user-select: none;
-    user-select: none;
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:6px 18px 28px 18px;
 }
+
+/* BUTTONS */
 
 button {
-    aspect-ratio: 1/1;
-    border-radius: 50%;
-    border: none;
-    font-size: 32px;
-    color: white;
-    background: #1b1b1b;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s;
+  aspect-ratio:1/1;
+  border-radius:50%;
+  border:none;
+  font-size:32px;
+  color:white;
+  background:#1b1b1b;
+  -webkit-tap-highlight-color:transparent;
 }
 
-.operator { background: #5c525c; }
-.top { background: #4b404b; }
-.equals { background: #8ab4f8; color: #202124; }
+.operator { background:#5c525c; }
+.top { background:#4b404b; }
+.equals { background:#8ab4f8; color:#000; }
 
-button:active { 
-    filter: brightness(1.2);
-    transform: scale(0.96);
-}
+button:active { transform:scale(0.95); }
 </style>
 </head>
 
@@ -117,167 +88,170 @@ button:active {
 
 <div class="calculator">
 
-    <div class="display">
-        <textarea 
-               class="mainInput" 
-               id="input" 
-               inputmode="none" 
-               spellcheck="false" 
-               autocomplete="off" 
-               rows="1">0</textarea>
-        
-        <div class="preview" id="preview"></div>
-    </div>
+  <div class="display">
+    <input type="text" class="mainInput" id="input" value="0" inputmode="none" spellcheck="false" autocomplete="off">
+    <div class="preview" id="preview"></div>
+  </div>
 
-    <div class="keypad">
-        <button class="top" ontouchstart="event.preventDefault(); insert('Math.sqrt(')">√</button>
-        <button class="top" ontouchstart="event.preventDefault(); insert('Math.PI')">π</button>
-        <button class="top" ontouchstart="event.preventDefault(); insert('^')">^</button>
-        <button class="top" ontouchstart="event.preventDefault(); clearAll()">AC</button>
+  <div class="keypad">
 
-        <button class="top" ontouchstart="event.preventDefault(); insert('(')">(</button>
-        <button class="top" ontouchstart="event.preventDefault(); insert(')')">)</button>
-        <button class="operator" ontouchstart="event.preventDefault(); insert('/')">÷</button>
-        <button class="operator" ontouchstart="event.preventDefault(); back()">⌫</button>
+    <button class="top" onclick="press('Math.sqrt(')">√</button>
+    <button class="top" onclick="press('Math.PI')">π</button>
+    <button class="top" onclick="press('^')">^</button>
+    <button class="top" onclick="clearAll()">AC</button>
 
-        <button ontouchstart="event.preventDefault(); insert('7')">7</button>
-        <button ontouchstart="event.preventDefault(); insert('8')">8</button>
-        <button ontouchstart="event.preventDefault(); insert('9')">9</button>
-        <button class="operator" ontouchstart="event.preventDefault(); insert('*')">×</button>
+    <button class="top" onclick="press('(')">(</button>
+    <button class="top" onclick="press(')')">)</button>
+    <button class="operator" onclick="press('/')">÷</button>
+    <button class="operator" onclick="back()">⌫</button>
 
-        <button ontouchstart="event.preventDefault(); insert('4')">4</button>
-        <button ontouchstart="event.preventDefault(); insert('5')">5</button>
-        <button ontouchstart="event.preventDefault(); insert('6')">6</button>
-        <button class="operator" ontouchstart="event.preventDefault(); insert('-')">−</button>
+    <button onclick="press('7')">7</button>
+    <button onclick="press('8')">8</button>
+    <button onclick="press('9')">9</button>
+    <button class="operator" onclick="press('*')">×</button>
 
-        <button ontouchstart="event.preventDefault(); insert('1')">1</button>
-        <button ontouchstart="event.preventDefault(); insert('2')">2</button>
-        <button ontouchstart="event.preventDefault(); insert('3')">3</button>
-        <button class="operator" ontouchstart="event.preventDefault(); insert('+')">+</button>
+    <button onclick="press('4')">4</button>
+    <button onclick="press('5')">5</button>
+    <button onclick="press('6')">6</button>
+    <button class="operator" onclick="press('-')">−</button>
 
-        <button ontouchstart="event.preventDefault(); toggleSign()">±</button>
-        <button ontouchstart="event.preventDefault(); insert('0')">0</button>
-        <button ontouchstart="event.preventDefault(); insert('.')">.</button>
-        <button class="equals" ontouchstart="event.preventDefault(); calculate()">=</button>
+    <button onclick="press('1')">1</button>
+    <button onclick="press('2')">2</button>
+    <button onclick="press('3')">3</button>
+    <button class="operator" onclick="press('+')">+</button>
 
-    </div>
+    <button onclick="toggleSign()">±</button>
+    <button onclick="press('0')">0</button>
+    <button onclick="press('.')">.</button>
+    <button class="equals" onclick="calculate()">=</button>
+
+  </div>
 
 </div>
 
 <script>
 
-const inputField = document.getElementById("input");
+const display = document.getElementById("input");
 const preview = document.getElementById("preview");
 
-// Prevent double-tap zoom
-document.addEventListener('dblclick', function(event) {
-    event.preventDefault();
-}, { passive: false });
+/* Prevent zoom */
+document.addEventListener('dblclick', e => e.preventDefault(), { passive:false });
 
-// Keep focus on the textarea if we tap empty space
-document.querySelector('.display').addEventListener('click', function(e) {
-    if(e.target !== inputField) {
-        inputField.focus();
+/* TRUE CARET POSITIONING (character-level) */
+display.addEventListener("click", function(e) {
+
+  const mirror = document.createElement("span");
+  mirror.style.position = "absolute";
+  mirror.style.visibility = "hidden";
+  mirror.style.whiteSpace = "pre";
+  mirror.style.font = window.getComputedStyle(display).font;
+
+  document.body.appendChild(mirror);
+
+  const text = display.value;
+  let pos = text.length;
+
+  for (let i = 0; i <= text.length; i++) {
+    mirror.textContent = text.substring(0, i);
+    if (mirror.offsetWidth >= e.offsetX) {
+      pos = i;
+      break;
     }
+  }
+
+  display.setSelectionRange(pos, pos);
+  display.focus();
+  document.body.removeChild(mirror);
 });
 
-function insert(val) {
-    const start = inputField.selectionStart;
-    const end = inputField.selectionEnd;
-    let current = inputField.value;
+function press(val){
+  const start = display.selectionStart;
+  const end = display.selectionEnd;
+  const currentValue = display.value;
 
-    if (current === "0" && !isNaN(val) && val !== '.') {
-        inputField.value = val;
-    } else {
-        inputField.value = current.substring(0, start) + val + current.substring(end);
-        inputField.selectionStart = inputField.selectionEnd = start + val.length;
+  if (currentValue === "0" && !isNaN(val) && val !== '.') {
+     display.value = val;
+     display.setSelectionRange(1,1);
+  } else {
+     display.value = currentValue.slice(0,start) + val + currentValue.slice(end);
+     display.setSelectionRange(start + val.length, start + val.length);
+  }
+
+  display.focus();
+  liveCalculate();
+}
+
+function clearAll(){
+  display.value = "0";
+  preview.innerText = "";
+  display.focus();
+}
+
+function back(){
+  const start = display.selectionStart;
+  const end = display.selectionEnd;
+  const currentValue = display.value;
+
+  if (start !== end) {
+      display.value = currentValue.slice(0,start) + currentValue.slice(end);
+      display.setSelectionRange(start,start);
+  } 
+  else if (start > 0) {
+      display.value = currentValue.slice(0,start-1) + currentValue.slice(start);
+      display.setSelectionRange(start-1,start-1);
+  }
+
+  if(display.value === "") display.value = "0";
+
+  display.focus();
+  liveCalculate();
+}
+
+function formatExpression(exp){
+  exp = exp.replace(/×/g,"*");
+  exp = exp.replace(/÷/g,"/");
+  exp = exp.replace(/−/g,"-");
+  exp = exp.replace(/(\d)\(/g,"$1*(");
+  exp = exp.replace(/\)(\d)/g,")*$1");
+  return exp;
+}
+
+function liveCalculate(){
+  try{
+    let val = display.value;
+    if(!val || val==="0"){ preview.innerText=""; return; }
+
+    let exp = formatExpression(val).replace(/\^/g,"**");
+    let result = eval(exp);
+
+    if(result!==undefined && result!==Infinity && !isNaN(result)){
+      preview.innerText =
+      Number(result).toLocaleString(undefined,{maximumFractionDigits:10});
     }
-    
-    // Scroll to the end so user sees what they type
-    inputField.scrollLeft = inputField.scrollWidth;
-    liveCalculate();
+  }catch{ preview.innerText=""; }
 }
 
-function back() {
-    const start = inputField.selectionStart;
-    const end = inputField.selectionEnd;
-    let current = inputField.value;
+function calculate(){
+  try{
+    let exp = formatExpression(display.value).replace(/\^/g,"**");
+    let result = eval(exp);
 
-    if (start === end) {
-        if (start > 0) {
-            inputField.value = current.substring(0, start - 1) + current.substring(end);
-            inputField.selectionStart = inputField.selectionEnd = start - 1;
-        }
-    } else {
-        inputField.value = current.substring(0, start) + current.substring(end);
-        inputField.selectionStart = inputField.selectionEnd = start;
-    }
-    
-    if (inputField.value === "") inputField.value = "0";
-    liveCalculate();
+    display.value = result.toString();
+    preview.innerText="";
+    display.focus();
+  }catch{
+    display.value="Error";
+    setTimeout(()=> display.value="0",1500);
+  }
 }
 
-function clearAll() {
-    inputField.value = "0";
-    preview.innerText = "";
-}
+function toggleSign(){
+  let val = display.value;
+  if(val.startsWith("-")) display.value = val.substring(1);
+  else display.value = "-"+val;
 
-/* LOGIC */
-
-function formatExpression(exp) {
-    exp = exp.replace(/×/g, "*");
-    exp = exp.replace(/÷/g, "/");
-    exp = exp.replace(/−/g, "-");
-    exp = exp.replace(/(\d)\(/g, "$1*(");
-    exp = exp.replace(/\)(\d)/g, ")*$1");
-    return exp;
-}
-
-function liveCalculate() {
-    try {
-        let val = inputField.value;
-        if (!val || val === "0") {
-            preview.innerText = "";
-            return;
-        }
-        let exp = formatExpression(val).replace(/\^/g, "**");
-        let result = eval(exp);
-        if (result !== undefined && !isNaN(result) && result !== Infinity) {
-            preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
-        } else {
-            preview.innerText = "";
-        }
-    } catch (e) {
-        preview.innerText = "";
-    }
-}
-
-function calculate() {
-    try {
-        let exp = formatExpression(inputField.value).replace(/\^/g, "**");
-        let result = eval(exp);
-        if (isNaN(result) || result === undefined) throw "Error";
-        inputField.value = result.toString();
-        preview.innerText = "";
-    } catch {
-        inputField.value = "Error";
-        setTimeout(() => inputField.value = "0", 1500);
-    }
-}
-
-function toggleSign() {
-    let val = inputField.value;
-    if (val.startsWith("-")) {
-        inputField.value = val.substring(1);
-    } else {
-        inputField.value = "-" + val;
-    }
-    liveCalculate();
-}
-
-// Force focus on load
-window.onload = function() {
-    inputField.focus();
+  liveCalculate();
+  display.focus();
 }
 
 </script>
