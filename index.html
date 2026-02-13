@@ -154,14 +154,31 @@ function clearAll(){
 }
 
 function back(){
-  input = input.slice(0,-1);
-  updateDisplay();
+  let field = document.getElementById("input");
+  let start = field.selectionStart;
+  let end = field.selectionEnd;
+
+  input = field.value;
+
+  if(start === end && start > 0){
+    input = input.slice(0,start-1) + input.slice(end);
+    field.value = input;
+    field.setSelectionRange(start-1,start-1);
+  } else {
+    input = input.slice(0,start) + input.slice(end);
+    field.value = input;
+    field.setSelectionRange(start,start);
+  }
+
   liveCalculate();
 }
 
-function updateDisplay(){
-  document.getElementById("input").innerText = input || "0";
 }
+
+function updateDisplay(){
+  document.getElementById("input").value = input || "";
+}
+
 
 /* IMPLICIT MULTIPLICATION */
 
