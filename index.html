@@ -9,9 +9,11 @@ html, body {
   margin:0;
   height:100%;
   background:#000;
-  font-family:-apple-system;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color:white;
   overflow:hidden;
+  -webkit-user-select: none; /* Prevent selecting UI elements */
+  user-select: none;
 }
 
 .calculator {
@@ -30,9 +32,12 @@ html, body {
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
+  cursor: text;
 }
 
-/* Changed from div to input for cursor support */
+/* Using a contenteditable DIV instead of INPUT 
+   This fixes the "cannot click between numbers" bug on iOS
+*/
 .mainInput {
   font-size:40px;
   background:transparent;
@@ -41,10 +46,16 @@ html, body {
   text-align:right;
   width:100%;
   outline:none;
-  caret-color: #8ab4f8; /* Google Blue Cursor */
+  caret-color: #8ab4f8;
   font-family: inherit;
   padding: 0;
   margin: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  
+  /* Critical for cursor placement on iOS */
+  -webkit-user-select: text;
+  user-select: text; 
 }
 
 .preview {
@@ -52,7 +63,7 @@ html, body {
   opacity:0.8;
   margin-top:6px;
   text-align: right;
-  min-height: 60px; /* Keeps layout stable */
+  min-height: 60px;
 }
 
 /* KEYPAD */
@@ -65,22 +76,25 @@ html, body {
   padding:6px 18px 28px 18px;
 }
 
-/* BUTTONS */
-
 button {
   aspect-ratio:1/1;
   border-radius:50%;
   border:none;
-  font-size:32px; /* Slightly smaller text for better fit */
+  font-size:32px;
   color:white;
   background:#1b1b1b;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
+  
+  /* Flex centers the text inside the button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .operator { background:#5c525c; }
 .top { background:#4b404b; }
-.equals { background: #8ab4f8; color: #000; } /* Pixel Blue */
+.equals { background: #8ab4f8; color: #000; }
 
 button:active { transform:scale(0.95); }
 </style>
@@ -90,42 +104,42 @@ button:active { transform:scale(0.95); }
 
 <div class="calculator">
 
-  <div class="display">
-    <input type="text" class="mainInput" id="input" value="0" inputmode="none" spellcheck="false" autocomplete="off">
+  <div class="display" onclick="document.getElementById('input').focus()">
+    <div class="mainInput" id="input" contenteditable="true" inputmode="none" spellcheck="false">0</div>
     <div class="preview" id="preview"></div>
   </div>
 
   <div class="keypad">
 
-    <button class="top" onclick="press('Math.sqrt(')">√</button>
-    <button class="top" onclick="press('Math.PI')">π</button>
-    <button class="top" onclick="press('^')">^</button>
-    <button class="top" onclick="clearAll()">AC</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="press('Math.sqrt(')">√</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="press('Math.PI')">π</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="press('^')">^</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="clearAll()">AC</button>
 
-    <button class="top" onclick="press('(')">(</button>
-    <button class="top" onclick="press(')')">)</button>
-    <button class="operator" onclick="press('/')">÷</button>
-    <button class="operator" onclick="back()">⌫</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="press('(')">(</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="press(')')">)</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="press('/')">÷</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="back()">⌫</button>
 
-    <button onclick="press('7')">7</button>
-    <button onclick="press('8')">8</button>
-    <button onclick="press('9')">9</button>
-    <button class="operator" onclick="press('*')">×</button>
+    <button onmousedown="event.preventDefault()" onclick="press('7')">7</button>
+    <button onmousedown="event.preventDefault()" onclick="press('8')">8</button>
+    <button onmousedown="event.preventDefault()" onclick="press('9')">9</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="press('*')">×</button>
 
-    <button onclick="press('4')">4</button>
-    <button onclick="press('5')">5</button>
-    <button onclick="press('6')">6</button>
-    <button class="operator" onclick="press('-')">−</button>
+    <button onmousedown="event.preventDefault()" onclick="press('4')">4</button>
+    <button onmousedown="event.preventDefault()" onclick="press('5')">5</button>
+    <button onmousedown="event.preventDefault()" onclick="press('6')">6</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="press('-')">−</button>
 
-    <button onclick="press('1')">1</button>
-    <button onclick="press('2')">2</button>
-    <button onclick="press('3')">3</button>
-    <button class="operator" onclick="press('+')">+</button>
+    <button onmousedown="event.preventDefault()" onclick="press('1')">1</button>
+    <button onmousedown="event.preventDefault()" onclick="press('2')">2</button>
+    <button onmousedown="event.preventDefault()" onclick="press('3')">3</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="press('+')">+</button>
 
-    <button onclick="toggleSign()">±</button>
-    <button onclick="press('0')">0</button>
-    <button onclick="press('.')">.</button>
-    <button class="equals" onclick="calculate()">=</button>
+    <button onmousedown="event.preventDefault()" onclick="toggleSign()">±</button>
+    <button onmousedown="event.preventDefault()" onclick="press('0')">0</button>
+    <button onmousedown="event.preventDefault()" onclick="press('.')">.</button>
+    <button class="equals" onmousedown="event.preventDefault()" onclick="calculate()">=</button>
 
   </div>
 
@@ -136,86 +150,71 @@ button:active { transform:scale(0.95); }
 const display = document.getElementById("input");
 const preview = document.getElementById("preview");
 
-// Prevent double-tap zoom on buttons
-document.addEventListener('dblclick', function(event) {
-  event.preventDefault();
-}, { passive: false });
+// Prevent double-tap zoom
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 function press(val){
-  const start = display.selectionStart;
-  const end = display.selectionEnd;
-  const currentValue = display.value;
-  
-  // Logic to replace initial "0" unless adding a decimal or operator
-  if (currentValue === "0" && !isNaN(val) && val !== '.') {
-     display.value = val;
-     // Move cursor to end
-     display.setSelectionRange(1, 1);
-  } else {
-     // Insert at cursor position
-     display.value = currentValue.slice(0, start) + val + currentValue.slice(end);
-     // Move cursor after inserted character
-     display.setSelectionRange(start + val.length, start + val.length);
+  // Ensure display has focus so we can insert at cursor
+  display.focus();
+
+  // If the content is just "0" and we are typing a number, clear it first
+  if (display.innerText === "0" && !isNaN(val) && val !== '.') {
+    // Select the "0" so the next command replaces it
+    document.execCommand('selectAll', false, null);
   }
 
-  // Keep focus on input so cursor stays visible
-  display.focus();
+  // Use execCommand 'insertText' to insert at cursor position automatically
+  // This is the most reliable way to handle cursor position on editable divs
+  document.execCommand('insertText', false, val);
+
   liveCalculate();
 }
 
 function clearAll(){
-  display.value = "0";
+  display.innerText = "0";
   preview.innerText = "";
   display.focus();
 }
 
 function back(){
-  const start = display.selectionStart;
-  const end = display.selectionEnd;
-  const currentValue = display.value;
-
-  // If text is selected, delete selection
-  if (start !== end) {
-      display.value = currentValue.slice(0, start) + currentValue.slice(end);
-      display.setSelectionRange(start, start);
-  } 
-  // Otherwise delete character before cursor
-  else if (start > 0) {
-      display.value = currentValue.slice(0, start - 1) + currentValue.slice(start);
-      display.setSelectionRange(start - 1, start - 1);
+  display.focus();
+  // Check if we have a selection to delete
+  let selection = window.getSelection();
+  if (selection.toString().length > 0) {
+      document.execCommand('delete');
+  } else {
+      // Otherwise just standard backspace
+      document.execCommand('delete');
   }
   
-  if(display.value === "") display.value = "0";
-  
-  display.focus();
+  if(display.innerText.trim() === "") display.innerText = "0";
   liveCalculate();
 }
 
-/* IMPLICIT MULTIPLICATION & FORMATTING */
+/* LOGIC */
+
 function formatExpression(exp){
-  // Visual replacements for calculation
+  exp = exp.replace(/\n/g, ""); // Remove accidental newlines
   exp = exp.replace(/×/g, "*");
   exp = exp.replace(/÷/g, "/");
   exp = exp.replace(/−/g, "-");
   
-  // Implicit multiplication logic
-  exp = exp.replace(/(\d)\(/g,"$1*("); // 5(2) -> 5*(2)
-  exp = exp.replace(/\)(\d)/g,")*$1"); // (2)5 -> (2)*5
+  // Implicit multiplication
+  exp = exp.replace(/(\d)\(/g,"$1*(");
+  exp = exp.replace(/\)(\d)/g,")*$1");
   
   return exp;
 }
 
 function liveCalculate(){
   try{
-    let val = display.value;
+    let val = display.innerText;
     if(!val || val === "0") {
         preview.innerText = ""; 
         return;
     }
 
     let exp = formatExpression(val).replace(/\^/g,"**");
-    
-    // Evaluate safely
     let result = eval(exp);
     
     if(result !== undefined && result !== Infinity && !isNaN(result)){
@@ -230,32 +229,43 @@ function liveCalculate(){
 
 function calculate(){
   try{
-    let exp = formatExpression(display.value).replace(/\^/g,"**");
+    let exp = formatExpression(display.innerText).replace(/\^/g,"**");
     let result = eval(exp);
     
     if(result === undefined || isNaN(result)) throw "Error";
     
-    display.value = result.toString();
+    display.innerText = result.toString();
     preview.innerText = "";
-    display.focus(); // Keep focus
+    
+    // Move cursor to end after calculation
+    let range = document.createRange();
+    let sel = window.getSelection();
+    range.selectNodeContents(display);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    
   }catch{
-    display.value = "Error";
-    setTimeout(() => { display.value = "0"; }, 1500);
+    display.innerText = "Error";
+    setTimeout(() => { display.innerText = "0"; }, 1500);
   }
 }
 
 function toggleSign(){
-  // Simple toggle for current context
-  // This just wraps the whole input or removes (-) if it exists at start
-  // For mid-string editing, full logic is complex, sticking to simple start toggle for now
-  let val = display.value;
+  display.focus();
+  let val = display.innerText;
+  
   if(val.startsWith("-")) {
-      display.value = val.substring(1);
+      display.innerText = val.substring(1);
   } else {
-      display.value = "-" + val;
+      display.innerText = "-" + val;
   }
   liveCalculate();
-  display.focus();
+}
+
+// Initial focus to ensure everything is ready
+window.onload = function() {
+    display.focus();
 }
 
 </script>
