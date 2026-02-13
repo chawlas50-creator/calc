@@ -114,14 +114,28 @@ button {
     transition: background 0.1s;
 }
 
-.operator { background: #5c525c; }
-.top { background: #4b404b; }
-.equals { background: #8ab4f8; color: #202124; }
-
 button:active { 
     filter: brightness(1.2);
     transform: scale(0.96);
 }
+
+/* BUTTON COLORS */
+.operator { background: #5c525c; }
+.top { background: #4b404b; }
+
+/* NEW: Orange for AC */
+.orange-btn { 
+    background: #ff9f0a; 
+    color: #202124; 
+    font-weight: 500;
+}
+
+/* NEW: Google Blue for Action Column */
+.blue-btn { 
+    background: #8ab4f8; 
+    color: #202124; 
+}
+
 </style>
 </head>
 
@@ -139,32 +153,32 @@ button:active {
         <button class="top" ontouchstart="handleTap(event, 'Math.sqrt(')">√</button>
         <button class="top" ontouchstart="handleTap(event, '%')">%</button>
         <button class="top" ontouchstart="handleTap(event, '^')">^</button>
-        <button class="top" ontouchstart="handleTap(event, 'AC')">AC</button>
+        <button class="orange-btn" ontouchstart="handleTap(event, 'AC')">AC</button>
 
         <button class="top" ontouchstart="handleTap(event, '(')">(</button>
         <button class="top" ontouchstart="handleTap(event, ')')">)</button>
         <button class="operator" ontouchstart="handleTap(event, '/')">÷</button>
-        <button class="operator" ontouchstart="handleTap(event, 'DEL')">⌫</button>
+        <button class="blue-btn" ontouchstart="handleTap(event, 'DEL')">⌫</button>
 
         <button ontouchstart="handleTap(event, '7')">7</button>
         <button ontouchstart="handleTap(event, '8')">8</button>
         <button ontouchstart="handleTap(event, '9')">9</button>
-        <button class="operator" ontouchstart="handleTap(event, '*')">×</button>
+        <button class="blue-btn" ontouchstart="handleTap(event, '*')">×</button>
 
         <button ontouchstart="handleTap(event, '4')">4</button>
         <button ontouchstart="handleTap(event, '5')">5</button>
         <button ontouchstart="handleTap(event, '6')">6</button>
-        <button class="operator" ontouchstart="handleTap(event, '-')">−</button>
+        <button class="blue-btn" ontouchstart="handleTap(event, '-')">−</button>
 
         <button ontouchstart="handleTap(event, '1')">1</button>
         <button ontouchstart="handleTap(event, '2')">2</button>
         <button ontouchstart="handleTap(event, '3')">3</button>
-        <button class="operator" ontouchstart="handleTap(event, '+')">+</button>
+        <button class="blue-btn" ontouchstart="handleTap(event, '+')">+</button>
 
         <button ontouchstart="handleTap(event, 'SIGN')">±</button>
         <button ontouchstart="handleTap(event, '0')">0</button>
         <button ontouchstart="handleTap(event, '.')">.</button>
-        <button class="equals" ontouchstart="handleTap(event, '=')">=</button>
+        <button class="blue-btn" ontouchstart="handleTap(event, '=')">=</button>
     </div>
 
 </div>
@@ -277,18 +291,10 @@ function formatExpression(exp) {
     exp = exp.replace(/×/g, "*");
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
-    
-    // Implicit multiplication for brackets: 5(2) -> 5*(2)
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
-    
-    // NEW: Implicit multiplication for percentages: 50%50 -> 50% * 50
     exp = exp.replace(/%(\d)/g, "%*$1");
-
-    // NEW: Handle Percentage (Convert % to /100)
-    // 50% -> 50/100 -> 0.5
     exp = exp.replace(/%/g, "/100");
-
     return exp;
 }
 
