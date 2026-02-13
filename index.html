@@ -42,6 +42,8 @@ html, body {
   width:100%;
   outline:none;
   caret-color:white;
+  white-space:nowrap;
+  overflow:hidden;
 }
 
 .preview {
@@ -83,7 +85,7 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <input class="mainInput" id="input" value="" inputmode="none">
+    <div class="mainInput" id="input" contenteditable="true"></div>
     <div class="preview" id="preview"></div>
   </div>
 
@@ -125,66 +127,61 @@ button:active { transform:scale(0.95); }
 
 <script>
 
-let input = "";
 const field = document.getElementById("input");
+let input = "";
 
-/* prevent keyboard but allow caret */
+/* place caret at end on first tap */
 field.addEventListener("focus", () => {
-  setTimeout(()=> field.blur(), 0);
+  placeCaretAtEnd(field);
 });
 
-/* place caret exactly where user taps */
-field.addEventListener("click", function(e){
-  let rect = field.getBoundingClientRect();
-  let clickX = e.clientX - rect.left;
-  let text = field.value;
+/* helper */
 
-  let pos = Math.round((clickX / rect.width) * text.length);
-  field.setSelectionRange(pos, pos);
-});
+function placeCaretAtEnd(el) {
+  el.focus();
+  document.execCommand("selectAll", false, null);
+  document.getSelection().collapseToEnd();
+}
 
-/* BUTTON INSERT AT CURSOR */
+/* insert text at caret */
+
+function insertAtCaret(text) {
+  let sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  let range = sel.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(document.createTextNode(text));
+  range.collapse(false);
+}
+
+/* PRESS */
 
 function press(val){
-  let start = field.selectionStart || 0;
-  let end = field.selectionEnd || 0;
+  insertAtCaret(val);
+  syncInput();
+  liveCalculate();
+}
 
-  input = field.value;
-  input = input.slice(0,start) + val + input.slice(end);
+/* BACKSPACE */
 
-  field.value = input;
-  field.setSelectionRange(start + val.length, start + val.length);
-
+function back(){
+  document.execCommand("delete");
+  syncInput();
   liveCalculate();
 }
 
 /* CLEAR */
 
 function clearAll(){
-  input="";
-  field.value="";
+  field.innerText = "";
+  input = "";
   document.getElementById("preview").innerText="";
 }
 
-/* BACKSPACE FROM CURSOR */
+/* SYNC TEXT */
 
-function back(){
-  let start = field.selectionStart || 0;
-  let end = field.selectionEnd || 0;
-
-  input = field.value;
-
-  if(start === end && start > 0){
-    input = input.slice(0,start-1) + input.slice(end);
-    field.value = input;
-    field.setSelectionRange(start-1,start-1);
-  } else {
-    input = input.slice(0,start) + input.slice(end);
-    field.value = input;
-    field.setSelectionRange(start,start);
-  }
-
-  liveCalculate();
+function syncInput(){
+  input = field.innerText;
 }
 
 /* IMPLICIT MULTIPLICATION */
@@ -220,18 +217,19 @@ function calculate(){
   try{
     let exp = formatExpression(input).replace(/\^/g,"**");
     let result = eval(exp);
+    field.innerText = result;
     input = result.toString();
-    field.value = input;
     document.getElementById("preview").innerText="";
+    placeCaretAtEnd(field);
   }catch{
-    field.value="Error";
+    field.innerText="Error";
   }
 }
 
 /* SIGN TOGGLE */
 
 function toggleSign(){
-  input = field.value;
+  syncInput();
 
   let match = input.match(/(-?\d+\.?\d*)$/);
 
@@ -242,11 +240,13 @@ function toggleSign(){
       : "-"+number;
 
     input = input.replace(/(-?\d+\.?\d*)$/, flipped);
+    field.innerText = input;
   } else {
     input = "-"+input;
+    field.innerText = input;
   }
 
-  field.value = input;
+  placeCaretAtEnd(field);
   liveCalculate();
 }
 
