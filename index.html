@@ -14,6 +14,16 @@ html, body {
   overflow:hidden;
 }
 
+.mainInput {
+  font-size:40px;
+  background:transparent;
+  border:none;
+  color:white;
+  text-align:right;
+  width:100%;
+  outline:none;
+}
+
 .calculator {
   position:fixed;
   inset:0;
@@ -76,7 +86,7 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <div class="mainInput" id="input">0</div>
+    <input class="mainInput" id="input" value="0" readonly />
     <div class="preview" id="preview"></div>
   </div>
 
@@ -121,10 +131,21 @@ button:active { transform:scale(0.95); }
 let input = "";
 
 function press(val){
-  input += val;
-  updateDisplay();
+  let field = document.getElementById("input");
+  let start = field.selectionStart;
+  let end = field.selectionEnd;
+
+  input = field.value;
+
+  input = input.slice(0,start) + val + input.slice(end);
+
+  field.value = input;
+
+  field.setSelectionRange(start + val.length, start + val.length);
+
   liveCalculate();
 }
+
 
 function clearAll(){
   input="";
