@@ -49,32 +49,32 @@ html, body {
     white-space: nowrap;
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Align right like a calculator */
+    justify-content: flex-end;
     height: 60px;
-    /* Hide scrollbar */
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 .virtual-input-container::-webkit-scrollbar { display: none; }
 
-/* THE TEXT CHARACTERS */
+/* CHARACTERS */
 .char {
     font-size: 44px;
     color: white;
     cursor: pointer;
     position: relative;
-    padding: 0 1px; /* Bigger touch target */
+    padding: 0 1px;
+    z-index: 10;
 }
 
-/* THE BLINKING CURSOR */
+/* BLINKING CURSOR */
 .cursor {
     width: 2px;
     height: 44px;
-    background-color: #8ab4f8; /* Google Blue */
+    background-color: #8ab4f8;
     display: inline-block;
     animation: blink 1s step-end infinite;
     margin: 0 1px;
-    flex-shrink: 0; /* Prevent squishing */
+    flex-shrink: 0;
 }
 
 @keyframes blink {
@@ -137,7 +137,7 @@ button:active {
 
     <div class="keypad">
         <button class="top" ontouchstart="handleTap(event, 'Math.sqrt(')">√</button>
-        <button class="top" ontouchstart="handleTap(event, 'Math.PI')">π</button>
+        <button class="top" ontouchstart="handleTap(event, '%')">%</button>
         <button class="top" ontouchstart="handleTap(event, '^')">^</button>
         <button class="top" ontouchstart="handleTap(event, 'AC')">AC</button>
 
@@ -172,8 +172,8 @@ button:active {
 <script>
 
 // STATE
-let inputData = "0"; // The raw string
-let cursorIndex = 1; // Position of cursor (0 = start, length = end)
+let inputData = "0"; 
+let cursorIndex = 1; 
 
 const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
@@ -181,14 +181,12 @@ const preview = document.getElementById("preview");
 // INITIAL RENDER
 render();
 
-// Prevent default tap behavior (zooming, selection)
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 // BUTTON HANDLER
 function handleTap(e, val) {
-    e.preventDefault(); // Stop ghost clicks
+    e.preventDefault(); 
     
-    // Haptic feedback (if supported)
     if (navigator.vibrate) navigator.vibrate(5);
 
     if (val === 'AC') {
@@ -197,7 +195,6 @@ function handleTap(e, val) {
     } 
     else if (val === 'DEL') {
         if (cursorIndex > 0) {
-            // Remove char BEFORE cursor
             inputData = inputData.slice(0, cursorIndex - 1) + inputData.slice(cursorIndex);
             cursorIndex--;
             if (inputData === "") {
@@ -208,10 +205,9 @@ function handleTap(e, val) {
     } 
     else if (val === '=') {
         calculate(true);
-        return; // Render handled in calculate
+        return;
     } 
     else if (val === 'SIGN') {
-        // Simple toggle at start
         if (inputData.startsWith('-')) {
             inputData = inputData.substring(1);
             if(cursorIndex > 0) cursorIndex--;
@@ -221,9 +217,8 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // Insert character at cursor
         if (inputData === "0" && !isNaN(val) && val !== '.') {
-            inputData = val; // Replace initial 0
+            inputData = val; 
             cursorIndex = val.length;
         } else {
             inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex);
@@ -235,22 +230,17 @@ function handleTap(e, val) {
     if (val !== '=') liveCalculate();
 }
 
-// RENDER ENGINE (The Magic Part)
+// RENDER ENGINE
 function render() {
     let html = "";
     const chars = inputData.split('');
 
-    // If cursor is at start (0), add it first
     if (cursorIndex === 0) {
         html += `<span class="cursor"></span>`;
     }
 
     chars.forEach((char, index) => {
-        // Wrap every char in a span that sets cursor AFTER it when clicked
-        // We use index+1 because clicking a char puts cursor after it
         html += `<span class="char" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
-        
-        // If cursor is right after this char, add it
         if (index + 1 === cursorIndex) {
             html += `<span class="cursor"></span>`;
         }
@@ -258,16 +248,14 @@ function render() {
 
     container.innerHTML = html;
     
-    // Auto-scroll to keep cursor in view
     const cursorEl = container.querySelector('.cursor');
     if (cursorEl) {
         cursorEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
     }
 }
 
-// CLICK HANDLING
 function moveCursor(newIndex, e) {
-    e.stopPropagation(); // Stop bubbling to container
+    e.stopPropagation(); 
     cursorIndex = newIndex;
     render();
 }
@@ -284,14 +272,23 @@ function focusEnd(e) {
     render();
 }
 
-
 // MATH LOGIC
 function formatExpression(exp) {
     exp = exp.replace(/×/g, "*");
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
+    
+    // Implicit multiplication for brackets: 5(2) -> 5*(2)
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
+    
+    // NEW: Implicit multiplication for percentages: 50%50 -> 50% * 50
+    exp = exp.replace(/%(\d)/g, "%*$1");
+
+    // NEW: Handle Percentage (Convert % to /100)
+    // 50% -> 50/100 -> 0.5
+    exp = exp.replace(/%/g, "/100");
+
     return exp;
 }
 
@@ -316,7 +313,7 @@ function calculate(final) {
         if (isNaN(result) || result === undefined) throw "Error";
         
         inputData = result.toString();
-        cursorIndex = inputData.length; // Move cursor to end of result
+        cursorIndex = inputData.length;
         preview.innerText = "";
         render();
     } catch {
