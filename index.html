@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <title>Pixel Calculator</title>
 
 <style>
-/* CSS RESET & BASICS */
+/* 1. ALLOW SELECTION BY DEFAULT (Fixes the "can't click" bug) */
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -21,9 +21,6 @@ html, body {
     font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: white;
     overflow: hidden;
-    /* Disable selection on UI elements so buttons don't get selected */
-    -webkit-user-select: none;
-    user-select: none;
     touch-action: manipulation;
 }
 
@@ -32,11 +29,10 @@ html, body {
     inset: 0;
     display: flex;
     flex-direction: column;
-    padding-bottom: env(safe-area-inset-bottom); /* Handle iPhone notches */
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* DISPLAY SECTION */
-
+/* DISPLAY */
 .display {
     background: #2b262b;
     padding: 22px 20px;
@@ -44,10 +40,9 @@ html, body {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    position: relative;
 }
 
-/* THE INPUT FIELD */
+/* 2. USE TEXTAREA FOR BETTER HIT TESTING */
 .mainInput {
     font-size: 44px;
     background: transparent;
@@ -56,21 +51,18 @@ html, body {
     text-align: right;
     width: 100%;
     outline: none;
-    caret-color: #8ab4f8; /* Google Blue Cursor */
+    caret-color: #8ab4f8;
     font-family: inherit;
     padding: 0;
     margin: 0;
-    letter-spacing: 1px; /* Makes clicking between numbers easier */
+    resize: none; /* Hide resize handle */
+    overflow: hidden;
+    white-space: nowrap;
     
-    /* CRITICAL FOR CURSOR */
+    /* Ensure text is clickable */
     -webkit-user-select: text;
     user-select: text;
     cursor: text;
-    
-    /* REMOVE IOS DEFAULT STYLES */
-    -webkit-appearance: none;
-    appearance: none;
-    border-radius: 0;
 }
 
 .preview {
@@ -80,16 +72,20 @@ html, body {
     min-height: 40px;
     margin-top: 10px;
     font-weight: 300;
+    pointer-events: none; /* Let clicks pass through to input if needed */
 }
 
-/* KEYPAD SECTION */
-
+/* KEYPAD */
 .keypad {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     padding: 10px 18px 20px 18px;
+    
+    /* Only disable selection here, not globally */
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 button {
@@ -114,7 +110,6 @@ button:active {
     filter: brightness(1.2);
     transform: scale(0.96);
 }
-
 </style>
 </head>
 
@@ -123,49 +118,47 @@ button:active {
 <div class="calculator">
 
     <div class="display">
-        <input type="text" 
+        <textarea 
                class="mainInput" 
                id="input" 
-               value="0" 
                inputmode="none" 
                spellcheck="false" 
                autocomplete="off" 
-               autocorrect="off" 
-               autocapitalize="off">
+               rows="1">0</textarea>
         
         <div class="preview" id="preview"></div>
     </div>
 
     <div class="keypad">
-        <button class="top" onmousedown="event.preventDefault()" onclick="insert('Math.sqrt(')">√</button>
-        <button class="top" onmousedown="event.preventDefault()" onclick="insert('Math.PI')">π</button>
-        <button class="top" onmousedown="event.preventDefault()" onclick="insert('^')">^</button>
-        <button class="top" onmousedown="event.preventDefault()" onclick="clearAll()">AC</button>
+        <button class="top" ontouchstart="event.preventDefault(); insert('Math.sqrt(')">√</button>
+        <button class="top" ontouchstart="event.preventDefault(); insert('Math.PI')">π</button>
+        <button class="top" ontouchstart="event.preventDefault(); insert('^')">^</button>
+        <button class="top" ontouchstart="event.preventDefault(); clearAll()">AC</button>
 
-        <button class="top" onmousedown="event.preventDefault()" onclick="insert('(')">(</button>
-        <button class="top" onmousedown="event.preventDefault()" onclick="insert(')')">)</button>
-        <button class="operator" onmousedown="event.preventDefault()" onclick="insert('/')">÷</button>
-        <button class="operator" onmousedown="event.preventDefault()" onclick="back()">⌫</button>
+        <button class="top" ontouchstart="event.preventDefault(); insert('(')">(</button>
+        <button class="top" ontouchstart="event.preventDefault(); insert(')')">)</button>
+        <button class="operator" ontouchstart="event.preventDefault(); insert('/')">÷</button>
+        <button class="operator" ontouchstart="event.preventDefault(); back()">⌫</button>
 
-        <button onmousedown="event.preventDefault()" onclick="insert('7')">7</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('8')">8</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('9')">9</button>
-        <button class="operator" onmousedown="event.preventDefault()" onclick="insert('*')">×</button>
+        <button ontouchstart="event.preventDefault(); insert('7')">7</button>
+        <button ontouchstart="event.preventDefault(); insert('8')">8</button>
+        <button ontouchstart="event.preventDefault(); insert('9')">9</button>
+        <button class="operator" ontouchstart="event.preventDefault(); insert('*')">×</button>
 
-        <button onmousedown="event.preventDefault()" onclick="insert('4')">4</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('5')">5</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('6')">6</button>
-        <button class="operator" onmousedown="event.preventDefault()" onclick="insert('-')">−</button>
+        <button ontouchstart="event.preventDefault(); insert('4')">4</button>
+        <button ontouchstart="event.preventDefault(); insert('5')">5</button>
+        <button ontouchstart="event.preventDefault(); insert('6')">6</button>
+        <button class="operator" ontouchstart="event.preventDefault(); insert('-')">−</button>
 
-        <button onmousedown="event.preventDefault()" onclick="insert('1')">1</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('2')">2</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('3')">3</button>
-        <button class="operator" onmousedown="event.preventDefault()" onclick="insert('+')">+</button>
+        <button ontouchstart="event.preventDefault(); insert('1')">1</button>
+        <button ontouchstart="event.preventDefault(); insert('2')">2</button>
+        <button ontouchstart="event.preventDefault(); insert('3')">3</button>
+        <button class="operator" ontouchstart="event.preventDefault(); insert('+')">+</button>
 
-        <button onmousedown="event.preventDefault()" onclick="toggleSign()">±</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('0')">0</button>
-        <button onmousedown="event.preventDefault()" onclick="insert('.')">.</button>
-        <button class="equals" onmousedown="event.preventDefault()" onclick="calculate()">=</button>
+        <button ontouchstart="event.preventDefault(); toggleSign()">±</button>
+        <button ontouchstart="event.preventDefault(); insert('0')">0</button>
+        <button ontouchstart="event.preventDefault(); insert('.')">.</button>
+        <button class="equals" ontouchstart="event.preventDefault(); calculate()">=</button>
 
     </div>
 
@@ -176,14 +169,14 @@ button:active {
 const inputField = document.getElementById("input");
 const preview = document.getElementById("preview");
 
-// Prevent double-tap zoom on the whole document
+// Prevent double-tap zoom
 document.addEventListener('dblclick', function(event) {
     event.preventDefault();
 }, { passive: false });
 
-// Ensure input keeps focus
-document.body.addEventListener('click', function(e) {
-    if(e.target.tagName !== 'BUTTON') {
+// Keep focus on the textarea if we tap empty space
+document.querySelector('.display').addEventListener('click', function(e) {
+    if(e.target !== inputField) {
         inputField.focus();
     }
 });
@@ -200,6 +193,8 @@ function insert(val) {
         inputField.selectionStart = inputField.selectionEnd = start + val.length;
     }
     
+    // Scroll to the end so user sees what they type
+    inputField.scrollLeft = inputField.scrollWidth;
     liveCalculate();
 }
 
@@ -227,7 +222,7 @@ function clearAll() {
     preview.innerText = "";
 }
 
-/* MATH LOGIC */
+/* LOGIC */
 
 function formatExpression(exp) {
     exp = exp.replace(/×/g, "*");
@@ -280,7 +275,7 @@ function toggleSign() {
     liveCalculate();
 }
 
-// Initial Focus
+// Force focus on load
 window.onload = function() {
     inputField.focus();
 }
