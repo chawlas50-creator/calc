@@ -42,8 +42,6 @@ html, body {
   width:100%;
   outline:none;
   caret-color:white;
-  white-space:nowrap;
-  overflow:hidden;
 }
 
 .preview {
@@ -85,7 +83,7 @@ button:active { transform:scale(0.95); }
 <div class="calculator">
 
   <div class="display">
-    <div class="mainInput" id="input" contenteditable="true"></div>
+    <input class="mainInput" id="input" value="" inputmode="none">
     <div class="preview" id="preview"></div>
   </div>
 
@@ -130,58 +128,59 @@ button:active { transform:scale(0.95); }
 const field = document.getElementById("input");
 let input = "";
 
-/* place caret at end on first tap */
-field.addEventListener("focus", () => {
-  placeCaretAtEnd(field);
+/* allow caret on tap */
+field.addEventListener("touchstart", () => {
+  field.focus();
 });
 
-/* helper */
+/* prevent keyboard */
+field.addEventListener("focus", () => {
+  setTimeout(()=> field.blur(), 0);
+});
 
-function placeCaretAtEnd(el) {
-  el.focus();
-  document.execCommand("selectAll", false, null);
-  document.getSelection().collapseToEnd();
-}
-
-/* insert text at caret */
-
-function insertAtCaret(text) {
-  let sel = window.getSelection();
-  if (!sel.rangeCount) return;
-  let range = sel.getRangeAt(0);
-  range.deleteContents();
-  range.insertNode(document.createTextNode(text));
-  range.collapse(false);
-}
-
-/* PRESS */
+/* BUTTON INSERT AT CURSOR */
 
 function press(val){
-  insertAtCaret(val);
-  syncInput();
-  liveCalculate();
-}
+  let start = field.selectionStart || field.value.length;
+  let end = field.selectionEnd || field.value.length;
 
-/* BACKSPACE */
+  input = field.value;
 
-function back(){
-  document.execCommand("delete");
-  syncInput();
+  input = input.slice(0,start) + val + input.slice(end);
+
+  field.value = input;
+  field.setSelectionRange(start + val.length, start + val.length);
+
   liveCalculate();
 }
 
 /* CLEAR */
 
 function clearAll(){
-  field.innerText = "";
-  input = "";
+  input="";
+  field.value="";
   document.getElementById("preview").innerText="";
 }
 
-/* SYNC TEXT */
+/* BACKSPACE */
 
-function syncInput(){
-  input = field.innerText;
+function back(){
+  let start = field.selectionStart || field.value.length;
+  let end = field.selectionEnd || field.value.length;
+
+  input = field.value;
+
+  if(start === end && start > 0){
+    input = input.slice(0,start-1) + input.slice(end);
+    field.value = input;
+    field.setSelectionRange(start-1,start-1);
+  } else {
+    input = input.slice(0,start) + input.slice(end);
+    field.value = input;
+    field.setSelectionRange(start,start);
+  }
+
+  liveCalculate();
 }
 
 /* IMPLICIT MULTIPLICATION */
@@ -217,19 +216,18 @@ function calculate(){
   try{
     let exp = formatExpression(input).replace(/\^/g,"**");
     let result = eval(exp);
-    field.innerText = result;
     input = result.toString();
+    field.value = input;
     document.getElementById("preview").innerText="";
-    placeCaretAtEnd(field);
   }catch{
-    field.innerText="Error";
+    field.value="Error";
   }
 }
 
 /* SIGN TOGGLE */
 
 function toggleSign(){
-  syncInput();
+  input = field.value;
 
   let match = input.match(/(-?\d+\.?\d*)$/);
 
@@ -240,13 +238,11 @@ function toggleSign(){
       : "-"+number;
 
     input = input.replace(/(-?\d+\.?\d*)$/, flipped);
-    field.innerText = input;
   } else {
     input = "-"+input;
-    field.innerText = input;
   }
 
-  placeCaretAtEnd(field);
+  field.value = input;
   liveCalculate();
 }
 
