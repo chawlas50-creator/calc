@@ -123,14 +123,12 @@ button:active {
 .operator { background: #5c525c; }
 .top { background: #4b404b; }
 
-/* NEW: Orange for AC */
 .orange-btn { 
     background: #ff9f0a; 
     color: #202124; 
     font-weight: 500;
 }
 
-/* NEW: Google Blue for Action Column */
 .blue-btn { 
     background: #8ab4f8; 
     color: #202124; 
@@ -291,10 +289,22 @@ function formatExpression(exp) {
     exp = exp.replace(/×/g, "*");
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
+    
+    // FIX: Business Logic for Percentages
+    // Detects "Number + Number %" or "Number - Number %"
+    // Converts "100 - 20%" into "100 - (100 * 20/100)"
+    exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
+
+    // Implicit multiplication for brackets
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
+    
+    // Implicit multiplication for percentage followed by number (e.g., 50%50)
     exp = exp.replace(/%(\d)/g, "%*$1");
+
+    // Standard Percentage Fallback (e.g., just "20%" or "50% * 10")
     exp = exp.replace(/%/g, "/100");
+
     return exp;
 }
 
