@@ -9,11 +9,13 @@ html, body {
   margin:0;
   height:100%;
   background:#000;
-  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:-apple-system;
   color:white;
   overflow:hidden;
-  -webkit-user-select: none; /* Prevent selecting UI elements */
+  /* Prevent selecting the UI */
+  -webkit-user-select: none;
   user-select: none;
+  touch-action: manipulation;
 }
 
 .calculator {
@@ -32,12 +34,8 @@ html, body {
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
-  cursor: text;
 }
 
-/* Using a contenteditable DIV instead of INPUT 
-   This fixes the "cannot click between numbers" bug on iOS
-*/
 .mainInput {
   font-size:40px;
   background:transparent;
@@ -46,16 +44,14 @@ html, body {
   text-align:right;
   width:100%;
   outline:none;
-  caret-color: #8ab4f8;
+  caret-color: #8ab4f8; /* Google Blue Cursor */
   font-family: inherit;
   padding: 0;
   margin: 0;
-  overflow-x: auto;
-  white-space: nowrap;
   
-  /* Critical for cursor placement on iOS */
-  -webkit-user-select: text;
-  user-select: text; 
+  /* CRITICAL: Allows cursor placement inside text */
+  -webkit-user-select: text; 
+  user-select: text;
 }
 
 .preview {
@@ -85,11 +81,6 @@ button {
   background:#1b1b1b;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
-  
-  /* Flex centers the text inside the button */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .operator { background:#5c525c; }
@@ -104,41 +95,40 @@ button:active { transform:scale(0.95); }
 
 <div class="calculator">
 
-  <div class="display" onclick="document.getElementById('input').focus()">
-    <div class="mainInput" id="input" contenteditable="true" inputmode="none" spellcheck="false">0</div>
+  <div class="display">
+    <input type="text" class="mainInput" id="input" value="0" inputmode="none" spellcheck="false" autocomplete="off">
     <div class="preview" id="preview"></div>
   </div>
 
   <div class="keypad">
-
-    <button class="top" onmousedown="event.preventDefault()" onclick="press('Math.sqrt(')">√</button>
-    <button class="top" onmousedown="event.preventDefault()" onclick="press('Math.PI')">π</button>
-    <button class="top" onmousedown="event.preventDefault()" onclick="press('^')">^</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="insert('Math.sqrt(')">√</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="insert('Math.PI')">π</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="insert('^')">^</button>
     <button class="top" onmousedown="event.preventDefault()" onclick="clearAll()">AC</button>
 
-    <button class="top" onmousedown="event.preventDefault()" onclick="press('(')">(</button>
-    <button class="top" onmousedown="event.preventDefault()" onclick="press(')')">)</button>
-    <button class="operator" onmousedown="event.preventDefault()" onclick="press('/')">÷</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="insert('(')">(</button>
+    <button class="top" onmousedown="event.preventDefault()" onclick="insert(')')">)</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="insert('/')">÷</button>
     <button class="operator" onmousedown="event.preventDefault()" onclick="back()">⌫</button>
 
-    <button onmousedown="event.preventDefault()" onclick="press('7')">7</button>
-    <button onmousedown="event.preventDefault()" onclick="press('8')">8</button>
-    <button onmousedown="event.preventDefault()" onclick="press('9')">9</button>
-    <button class="operator" onmousedown="event.preventDefault()" onclick="press('*')">×</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('7')">7</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('8')">8</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('9')">9</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="insert('*')">×</button>
 
-    <button onmousedown="event.preventDefault()" onclick="press('4')">4</button>
-    <button onmousedown="event.preventDefault()" onclick="press('5')">5</button>
-    <button onmousedown="event.preventDefault()" onclick="press('6')">6</button>
-    <button class="operator" onmousedown="event.preventDefault()" onclick="press('-')">−</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('4')">4</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('5')">5</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('6')">6</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="insert('-')">−</button>
 
-    <button onmousedown="event.preventDefault()" onclick="press('1')">1</button>
-    <button onmousedown="event.preventDefault()" onclick="press('2')">2</button>
-    <button onmousedown="event.preventDefault()" onclick="press('3')">3</button>
-    <button class="operator" onmousedown="event.preventDefault()" onclick="press('+')">+</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('1')">1</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('2')">2</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('3')">3</button>
+    <button class="operator" onmousedown="event.preventDefault()" onclick="insert('+')">+</button>
 
     <button onmousedown="event.preventDefault()" onclick="toggleSign()">±</button>
-    <button onmousedown="event.preventDefault()" onclick="press('0')">0</button>
-    <button onmousedown="event.preventDefault()" onclick="press('.')">.</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('0')">0</button>
+    <button onmousedown="event.preventDefault()" onclick="insert('.')">.</button>
     <button class="equals" onmousedown="event.preventDefault()" onclick="calculate()">=</button>
 
   </div>
@@ -147,125 +137,112 @@ button:active { transform:scale(0.95); }
 
 <script>
 
-const display = document.getElementById("input");
+const inputField = document.getElementById("input");
 const preview = document.getElementById("preview");
 
 // Prevent double-tap zoom
-document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('dblclick', function(event) {
+  event.preventDefault();
+}, { passive: false });
 
-function press(val){
-  // Ensure display has focus so we can insert at cursor
-  display.focus();
+function insert(val) {
+    const start = inputField.selectionStart;
+    const end = inputField.selectionEnd;
+    let current = inputField.value;
 
-  // If the content is just "0" and we are typing a number, clear it first
-  if (display.innerText === "0" && !isNaN(val) && val !== '.') {
-    // Select the "0" so the next command replaces it
-    document.execCommand('selectAll', false, null);
-  }
-
-  // Use execCommand 'insertText' to insert at cursor position automatically
-  // This is the most reliable way to handle cursor position on editable divs
-  document.execCommand('insertText', false, val);
-
-  liveCalculate();
-}
-
-function clearAll(){
-  display.innerText = "0";
-  preview.innerText = "";
-  display.focus();
-}
-
-function back(){
-  display.focus();
-  // Check if we have a selection to delete
-  let selection = window.getSelection();
-  if (selection.toString().length > 0) {
-      document.execCommand('delete');
-  } else {
-      // Otherwise just standard backspace
-      document.execCommand('delete');
-  }
-  
-  if(display.innerText.trim() === "") display.innerText = "0";
-  liveCalculate();
-}
-
-/* LOGIC */
-
-function formatExpression(exp){
-  exp = exp.replace(/\n/g, ""); // Remove accidental newlines
-  exp = exp.replace(/×/g, "*");
-  exp = exp.replace(/÷/g, "/");
-  exp = exp.replace(/−/g, "-");
-  
-  // Implicit multiplication
-  exp = exp.replace(/(\d)\(/g,"$1*(");
-  exp = exp.replace(/\)(\d)/g,")*$1");
-  
-  return exp;
-}
-
-function liveCalculate(){
-  try{
-    let val = display.innerText;
-    if(!val || val === "0") {
-        preview.innerText = ""; 
-        return;
-    }
-
-    let exp = formatExpression(val).replace(/\^/g,"**");
-    let result = eval(exp);
-    
-    if(result !== undefined && result !== Infinity && !isNaN(result)){
-      preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+    // Logic to replace initial "0"
+    if (current === "0" && !isNaN(val) && val !== '.') {
+        inputField.value = val;
     } else {
-      preview.innerText = "";
+        // Insert text exactly where the cursor is
+        inputField.value = current.substring(0, start) + val + current.substring(end);
+        
+        // Move cursor to AFTER the new character
+        inputField.selectionStart = inputField.selectionEnd = start + val.length;
     }
-  }catch(e){
+    
+    // Trigger live calculation
+    liveCalculate();
+}
+
+function back() {
+    const start = inputField.selectionStart;
+    const end = inputField.selectionEnd;
+    let current = inputField.value;
+
+    if (start === end) {
+        // No selection: delete character BEFORE cursor
+        if (start > 0) {
+            inputField.value = current.substring(0, start - 1) + current.substring(end);
+            inputField.selectionStart = inputField.selectionEnd = start - 1;
+        }
+    } else {
+        // Selection active: delete selected text
+        inputField.value = current.substring(0, start) + current.substring(end);
+        inputField.selectionStart = inputField.selectionEnd = start;
+    }
+    
+    if (inputField.value === "") inputField.value = "0";
+    liveCalculate();
+}
+
+function clearAll() {
+    inputField.value = "0";
     preview.innerText = "";
-  }
 }
 
-function calculate(){
-  try{
-    let exp = formatExpression(display.innerText).replace(/\^/g,"**");
-    let result = eval(exp);
-    
-    if(result === undefined || isNaN(result)) throw "Error";
-    
-    display.innerText = result.toString();
-    preview.innerText = "";
-    
-    // Move cursor to end after calculation
-    let range = document.createRange();
-    let sel = window.getSelection();
-    range.selectNodeContents(display);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    
-  }catch{
-    display.innerText = "Error";
-    setTimeout(() => { display.innerText = "0"; }, 1500);
-  }
+/* CALCULATION LOGIC */
+
+function formatExpression(exp) {
+    exp = exp.replace(/×/g, "*");
+    exp = exp.replace(/÷/g, "/");
+    exp = exp.replace(/−/g, "-");
+    // Implicit multiplication
+    exp = exp.replace(/(\d)\(/g, "$1*(");
+    exp = exp.replace(/\)(\d)/g, ")*$1");
+    return exp;
 }
 
-function toggleSign(){
-  display.focus();
-  let val = display.innerText;
-  
-  if(val.startsWith("-")) {
-      display.innerText = val.substring(1);
-  } else {
-      display.innerText = "-" + val;
-  }
-  liveCalculate();
+function liveCalculate() {
+    try {
+        let val = inputField.value;
+        if (!val || val === "0") {
+            preview.innerText = "";
+            return;
+        }
+        let exp = formatExpression(val).replace(/\^/g, "**");
+        let result = eval(exp);
+        if (result !== undefined && !isNaN(result) && result !== Infinity) {
+            preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+        } else {
+            preview.innerText = "";
+        }
+    } catch (e) {
+        preview.innerText = "";
+    }
 }
 
-// Initial focus to ensure everything is ready
-window.onload = function() {
-    display.focus();
+function calculate() {
+    try {
+        let exp = formatExpression(inputField.value).replace(/\^/g, "**");
+        let result = eval(exp);
+        if (isNaN(result) || result === undefined) throw "Error";
+        inputField.value = result.toString();
+        preview.innerText = "";
+    } catch {
+        inputField.value = "Error";
+        setTimeout(() => inputField.value = "0", 1500);
+    }
+}
+
+function toggleSign() {
+    let val = inputField.value;
+    if (val.startsWith("-")) {
+        inputField.value = val.substring(1);
+    } else {
+        inputField.value = "-" + val;
+    }
+    liveCalculate();
 }
 
 </script>
