@@ -273,11 +273,17 @@ function moveCursor(newIndex, e) {
 }
 
 function focusEnd(e) {
-    // If clicking empty space in display, move to end or start based on click position
-    // Simple version: just move to end
-    cursorIndex = inputData.length;
+    const rect = container.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+
+    if (clickX < rect.width / 2) {
+        cursorIndex = 0;
+    } else {
+        cursorIndex = inputData.length;
+    }
     render();
 }
+
 
 // MATH LOGIC
 function formatExpression(exp) {
