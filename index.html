@@ -148,7 +148,7 @@ button:active {
     </div>
 
     <div class="keypad">
-        <button class="top" ontouchstart="handleTap(event, 'Math.sqrt(')">√</button>
+        <button class="top" ontouchstart="handleTap(event, '√(')">√</button>
         <button class="top" ontouchstart="handleTap(event, '%')">%</button>
         <button class="top" ontouchstart="handleTap(event, '^')">^</button>
         <button class="orange-btn" ontouchstart="handleTap(event, 'AC')">AC</button>
@@ -290,6 +290,10 @@ function formatExpression(exp) {
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
     
+    // NEW: Translator for Square Root
+    // Turns "√(" into "Math.sqrt("
+    exp = exp.replace(/√/g, "Math.sqrt");
+
     // Percent logic
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
 
@@ -308,7 +312,7 @@ function liveCalculate() {
     try {
         let exp = formatExpression(inputData);
 
-        // AUTO-CLOSE BRACKETS (Just for preview)
+        // AUTO-CLOSE BRACKETS
         const open = (exp.match(/\(/g) || []).length;
         const close = (exp.match(/\)/g) || []).length;
         if (open > close) {
@@ -331,7 +335,6 @@ function calculate(final) {
     try {
         let exp = formatExpression(inputData);
 
-        // AUTO-CLOSE BRACKETS (Fixes the error)
         const open = (exp.match(/\(/g) || []).length;
         const close = (exp.match(/\)/g) || []).length;
         if (open > close) {
