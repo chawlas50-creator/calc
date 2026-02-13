@@ -290,19 +290,15 @@ function formatExpression(exp) {
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
     
-    // FIX: Business Logic for Percentages
-    // Detects "Number + Number %" or "Number - Number %"
-    // Converts "100 - 20%" into "100 - (100 * 20/100)"
+    // Percent logic
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
 
-    // Implicit multiplication for brackets
+    // Implicit multiplication
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
-    
-    // Implicit multiplication for percentage followed by number (e.g., 50%50)
     exp = exp.replace(/%(\d)/g, "%*$1");
 
-    // Standard Percentage Fallback (e.g., just "20%" or "50% * 10")
+    // Standard Percent
     exp = exp.replace(/%/g, "/100");
 
     return exp;
@@ -310,7 +306,16 @@ function formatExpression(exp) {
 
 function liveCalculate() {
     try {
-        let exp = formatExpression(inputData).replace(/\^/g, "**");
+        let exp = formatExpression(inputData);
+
+        // AUTO-CLOSE BRACKETS (Just for preview)
+        const open = (exp.match(/\(/g) || []).length;
+        const close = (exp.match(/\)/g) || []).length;
+        if (open > close) {
+            exp += ")".repeat(open - close);
+        }
+
+        exp = exp.replace(/\^/g, "**");
         let result = eval(exp);
         if (result !== undefined && !isNaN(result) && result !== Infinity) {
             preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
@@ -324,7 +329,16 @@ function liveCalculate() {
 
 function calculate(final) {
     try {
-        let exp = formatExpression(inputData).replace(/\^/g, "**");
+        let exp = formatExpression(inputData);
+
+        // AUTO-CLOSE BRACKETS (Fixes the error)
+        const open = (exp.match(/\(/g) || []).length;
+        const close = (exp.match(/\)/g) || []).length;
+        if (open > close) {
+            exp += ")".repeat(open - close);
+        }
+
+        exp = exp.replace(/\^/g, "**");
         let result = eval(exp);
         if (isNaN(result) || result === undefined) throw "Error";
         
