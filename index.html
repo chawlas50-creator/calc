@@ -229,7 +229,9 @@ function handleTap(e, val) {
         }
     } 
     else {
-        if (inputData === "0" && !isNaN(val) && val !== '.') {
+        // LOGIC CHANGE:
+        // If input is "0" AND the new button is NOT a dot ".", replace the 0.
+        if (inputData === "0" && val !== '.') {
             inputData = val; 
             cursorIndex = val.length;
         } else {
@@ -290,30 +292,27 @@ function formatExpression(exp) {
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
     
-    // 1. Implicit Multiplication for Square Root (2√9 -> 2*√9)
+    // Implicit multiplication for Square Root (2√9 -> 2*√9)
     exp = exp.replace(/(\d)√/g, "$1*√");
 
-    // 2. Smart Root Logic (The "Second Logic")
-    // If it finds √ followed by digits (like √2 or √2.5), it wraps JUST THAT number.
+    // Smart Root Logic
     exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)");
-
-    // 3. Explicit Logic
-    // If it finds √ followed by (, it treats it normally.
+    
+    // Explicit Root Logic
     exp = exp.replace(/√\(/g, "Math.sqrt(");
-
-    // 4. Fallback (Safety)
-    // If any lonely √ is left (weird edge case), just treat it as open.
+    
+    // Fallback Root Logic
     exp = exp.replace(/√/g, "Math.sqrt(");
 
-    // 5. Percent logic
+    // Percent logic
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
 
-    // 6. Implicit multiplication
+    // Implicit multiplication
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
     exp = exp.replace(/%(\d)/g, "%*$1");
 
-    // 7. Standard Percent
+    // Standard Percent
     exp = exp.replace(/%/g, "/100");
 
     return exp;
