@@ -8,7 +8,10 @@
 
 <style>
 /* RESET & BASICS */
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+}
 
 html, body {
     margin: 0;
@@ -19,7 +22,6 @@ html, body {
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
 }
 
 .calculator {
@@ -111,12 +113,18 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.1s;
+    
+    /* TURBO MODE: Remove 300ms delay and handle instantly */
+    touch-action: manipulation;
+    
+    /* ANIMATION: Smoothly shrink and grow */
+    transition: transform 0.05s ease, filter 0.05s ease, background 0.05s ease;
 }
 
+/* THE CLICK FEEDBACK */
 button:active { 
-    filter: brightness(1.2);
-    transform: scale(0.96);
+    transform: scale(0.92); /* Shrink slightly */
+    filter: brightness(1.5); /* Glow bright */
 }
 
 /* BUTTON COLORS */
@@ -197,9 +205,7 @@ document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: fals
 
 // BUTTON HANDLER
 function handleTap(e, val) {
-    // Note: preventDefault is optional for 'click', but keeping it safe.
-    // e.preventDefault(); 
-    
+    // Note: navigator.vibrate works on Android but is ignored by Safari/iOS
     if (navigator.vibrate) navigator.vibrate(5);
 
     if (val === 'AC') {
@@ -230,7 +236,7 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // --- DECIMAL LOCK SECURITY GUARD ---
+        // DECIMAL LOCK
         if (val === '.') {
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) {
@@ -245,7 +251,6 @@ function handleTap(e, val) {
                 return; 
             }
         }
-        // ----------------------------------------
 
         // REPLACER LOGIC
         if (inputData === "0" && val !== '.') {
@@ -327,10 +332,8 @@ function formatExpression(exp) {
 }
 
 function liveCalculate() {
-    // 1. CHECK: Is this "Just a Number"?
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
 
-    // 2. TEXT MODE
     if (!isMathMode) {
         try {
             let parts = inputData.split('.');
@@ -342,7 +345,6 @@ function liveCalculate() {
         return;
     }
 
-    // 3. MATH MODE
     try {
         let exp = formatExpression(inputData);
 
