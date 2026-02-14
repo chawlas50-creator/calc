@@ -148,35 +148,35 @@ button:active {
     </div>
 
     <div class="keypad">
-        <button class="top" ontouchstart="handleTap(event, '√')">√</button>
-        <button class="top" ontouchstart="handleTap(event, '%')">%</button>
-        <button class="top" ontouchstart="handleTap(event, '^')">^</button>
-        <button class="orange-btn" ontouchstart="handleTap(event, 'AC')">AC</button>
+        <button class="top" onclick="handleTap(event, '√')">√</button>
+        <button class="top" onclick="handleTap(event, '%')">%</button>
+        <button class="top" onclick="handleTap(event, '^')">^</button>
+        <button class="orange-btn" onclick="handleTap(event, 'AC')">AC</button>
 
-        <button class="top" ontouchstart="handleTap(event, '(')">(</button>
-        <button class="top" ontouchstart="handleTap(event, ')')">)</button>
-        <button class="operator" ontouchstart="handleTap(event, '/')">÷</button>
-        <button class="blue-btn" ontouchstart="handleTap(event, 'DEL')">⌫</button>
+        <button class="top" onclick="handleTap(event, '(')">(</button>
+        <button class="top" onclick="handleTap(event, ')')">)</button>
+        <button class="operator" onclick="handleTap(event, '/')">÷</button>
+        <button class="blue-btn" onclick="handleTap(event, 'DEL')">⌫</button>
 
-        <button ontouchstart="handleTap(event, '7')">7</button>
-        <button ontouchstart="handleTap(event, '8')">8</button>
-        <button ontouchstart="handleTap(event, '9')">9</button>
-        <button class="blue-btn" ontouchstart="handleTap(event, '*')">×</button>
+        <button onclick="handleTap(event, '7')">7</button>
+        <button onclick="handleTap(event, '8')">8</button>
+        <button onclick="handleTap(event, '9')">9</button>
+        <button class="blue-btn" onclick="handleTap(event, '*')">×</button>
 
-        <button ontouchstart="handleTap(event, '4')">4</button>
-        <button ontouchstart="handleTap(event, '5')">5</button>
-        <button ontouchstart="handleTap(event, '6')">6</button>
-        <button class="blue-btn" ontouchstart="handleTap(event, '-')">−</button>
+        <button onclick="handleTap(event, '4')">4</button>
+        <button onclick="handleTap(event, '5')">5</button>
+        <button onclick="handleTap(event, '6')">6</button>
+        <button class="blue-btn" onclick="handleTap(event, '-')">−</button>
 
-        <button ontouchstart="handleTap(event, '1')">1</button>
-        <button ontouchstart="handleTap(event, '2')">2</button>
-        <button ontouchstart="handleTap(event, '3')">3</button>
-        <button class="blue-btn" ontouchstart="handleTap(event, '+')">+</button>
+        <button onclick="handleTap(event, '1')">1</button>
+        <button onclick="handleTap(event, '2')">2</button>
+        <button onclick="handleTap(event, '3')">3</button>
+        <button class="blue-btn" onclick="handleTap(event, '+')">+</button>
 
-        <button ontouchstart="handleTap(event, 'SIGN')">±</button>
-        <button ontouchstart="handleTap(event, '0')">0</button>
-        <button ontouchstart="handleTap(event, '.')">.</button>
-        <button class="blue-btn" ontouchstart="handleTap(event, '=')">=</button>
+        <button onclick="handleTap(event, 'SIGN')">±</button>
+        <button onclick="handleTap(event, '0')">0</button>
+        <button onclick="handleTap(event, '.')">.</button>
+        <button class="blue-btn" onclick="handleTap(event, '=')">=</button>
     </div>
 
 </div>
@@ -197,7 +197,8 @@ document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: fals
 
 // BUTTON HANDLER
 function handleTap(e, val) {
-    e.preventDefault(); 
+    // Note: preventDefault is optional for 'click', but keeping it safe.
+    // e.preventDefault(); 
     
     if (navigator.vibrate) navigator.vibrate(5);
 
@@ -229,28 +230,24 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // --- NEW: DECIMAL LOCK SECURITY GUARD ---
-        // If the user presses ".", check the current number segment.
+        // --- DECIMAL LOCK SECURITY GUARD ---
         if (val === '.') {
-            // 1. Scan Left
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) {
                 start--;
             }
-            // 2. Scan Right
             let end = cursorIndex;
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) {
                 end++;
             }
-            // 3. Extract Segment and Check
             const currentNumber = inputData.substring(start + 1, end);
             if (currentNumber.includes('.')) {
-                return; // STOP! Don't let the dot pass.
+                return; 
             }
         }
         // ----------------------------------------
 
-        // REPLACER LOGIC: Only Dot is an Appender. Everything else Replaces 0.
+        // REPLACER LOGIC
         if (inputData === "0" && val !== '.') {
             inputData = val; 
             cursorIndex = val.length;
@@ -312,23 +309,18 @@ function formatExpression(exp) {
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
     
-    // Implicit Multiplication for Square Root
     exp = exp.replace(/(\d)√/g, "$1*√");
 
-    // Smart Root Logic
     exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)");
     exp = exp.replace(/√\(/g, "Math.sqrt(");
     exp = exp.replace(/√/g, "Math.sqrt(");
 
-    // Percent logic
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
 
-    // Implicit multiplication
     exp = exp.replace(/(\d)\(/g, "$1*(");
     exp = exp.replace(/\)(\d)/g, ")*$1");
     exp = exp.replace(/%(\d)/g, "%*$1");
 
-    // Standard Percent
     exp = exp.replace(/%/g, "/100");
 
     return exp;
@@ -338,14 +330,11 @@ function liveCalculate() {
     // 1. CHECK: Is this "Just a Number"?
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
 
-    // 2. TEXT MODE (No rounding, infinite digits)
+    // 2. TEXT MODE
     if (!isMathMode) {
         try {
-            // Split into integer and decimal parts
             let parts = inputData.split('.');
-            // Add commas to the integer part
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            // Join them back
             preview.innerText = parts.join('.');
         } catch {
             preview.innerText = inputData;
@@ -353,7 +342,7 @@ function liveCalculate() {
         return;
     }
 
-    // 3. MATH MODE (Normal Calculation)
+    // 3. MATH MODE
     try {
         let exp = formatExpression(inputData);
 
