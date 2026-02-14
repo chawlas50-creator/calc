@@ -229,8 +229,7 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // LOGIC CHANGE:
-        // If input is "0" AND the new button is NOT a dot ".", replace the 0.
+        // REPLACER LOGIC: Only Dot is an Appender. Everything else Replaces 0.
         if (inputData === "0" && val !== '.') {
             inputData = val; 
             cursorIndex = val.length;
@@ -292,16 +291,12 @@ function formatExpression(exp) {
     exp = exp.replace(/÷/g, "/");
     exp = exp.replace(/−/g, "-");
     
-    // Implicit multiplication for Square Root (2√9 -> 2*√9)
+    // Implicit Multiplication for Square Root
     exp = exp.replace(/(\d)√/g, "$1*√");
 
     // Smart Root Logic
     exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)");
-    
-    // Explicit Root Logic
     exp = exp.replace(/√\(/g, "Math.sqrt(");
-    
-    // Fallback Root Logic
     exp = exp.replace(/√/g, "Math.sqrt(");
 
     // Percent logic
@@ -319,6 +314,29 @@ function formatExpression(exp) {
 }
 
 function liveCalculate() {
+    // 1. CHECK: Is this "Just a Number"?
+    // We look for operators. Note: Minus is tricky because it can be negative number or subtraction.
+    // For simplicity: If it has +, *, /, ^, %, √, (, ), or a minus NOT at the start, it's Math.
+    
+    // This Regex checks for any math operator that isn't a leading negative sign
+    const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
+
+    // 2. TEXT MODE (No rounding, infinite digits)
+    if (!isMathMode) {
+        try {
+            // Split into integer and decimal parts
+            let parts = inputData.split('.');
+            // Add commas to the integer part
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            // Join them back
+            preview.innerText = parts.join('.');
+        } catch {
+            preview.innerText = inputData;
+        }
+        return;
+    }
+
+    // 3. MATH MODE (Normal Calculation)
     try {
         let exp = formatExpression(inputData);
 
