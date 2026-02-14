@@ -229,6 +229,27 @@ function handleTap(e, val) {
         }
     } 
     else {
+        // --- NEW: DECIMAL LOCK SECURITY GUARD ---
+        // If the user presses ".", check the current number segment.
+        if (val === '.') {
+            // 1. Scan Left
+            let start = cursorIndex - 1;
+            while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) {
+                start--;
+            }
+            // 2. Scan Right
+            let end = cursorIndex;
+            while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) {
+                end++;
+            }
+            // 3. Extract Segment and Check
+            const currentNumber = inputData.substring(start + 1, end);
+            if (currentNumber.includes('.')) {
+                return; // STOP! Don't let the dot pass.
+            }
+        }
+        // ----------------------------------------
+
         // REPLACER LOGIC: Only Dot is an Appender. Everything else Replaces 0.
         if (inputData === "0" && val !== '.') {
             inputData = val; 
@@ -315,10 +336,6 @@ function formatExpression(exp) {
 
 function liveCalculate() {
     // 1. CHECK: Is this "Just a Number"?
-    // We look for operators. Note: Minus is tricky because it can be negative number or subtraction.
-    // For simplicity: If it has +, *, /, ^, %, √, (, ), or a minus NOT at the start, it's Math.
-    
-    // This Regex checks for any math operator that isn't a leading negative sign
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
 
     // 2. TEXT MODE (No rounding, infinite digits)
