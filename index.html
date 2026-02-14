@@ -377,49 +377,56 @@ function liveCalculate() {
 
 function calculate() {
     try {
-        // IMAGINARY INTERCEPTOR (The Joke)
-        // Checks specifically for the √- pattern in the raw input
-        if (inputData.includes('√-') || inputData.includes('√(-')) {
+        let exp = formatExpression(inputData);
+        
+        // Auto-balance parentheses if they are uneven
+        const open = (exp.match(/\(/g) || []).length;
+        const close = (exp.match(/\)/g) || []).length;
+        if (open > close) exp += ")".repeat(open - close);
+        
+        exp = exp.replace(/\^/g, "**");
+        
+        // 1. RUN THE MATH FIRST
+        let result = eval(exp);
+        
+        // 2. CHECK FOR ERRORS (NaN)
+        // If result is valid (including Infinity), this block is skipped.
+        if (isNaN(result)) {
+            // Now we check: Was this NaN caused by a negative root?
+            if (inputData.includes('√-') || inputData.includes('√(-')) {
+                throw "Imaginary"; // Trigger the joke
+            } else {
+                throw "Error"; // Genuine syntax error
+            }
+        }
+
+        // 3. SUCCESS (Including Infinity)
+        inputData = result.toString();
+        cursorIndex = inputData.length;
+        preview.innerText = "";
+        render();
+
+    } catch (e) {
+        if (e === "Imaginary") {
             inputData = "Sorry. I can't imagine numbers.";
-            cursorIndex = 0; // Hide cursor mostly
-            preview.innerText = "";
-            render();
-            // Reset after 2.5 seconds
+            // Reset slightly longer for the joke to land
             setTimeout(() => { 
                 inputData = "0"; 
                 cursorIndex = 1; 
                 render(); 
             }, 2500);
-            return;
+        } else {
+            inputData = "Error";
+            setTimeout(() => { 
+                inputData = "0"; 
+                cursorIndex = 1; 
+                render(); 
+            }, 1500);
         }
-
-        let exp = formatExpression(inputData);
-        const open = (exp.match(/\(/g) || []).length;
-        const close = (exp.match(/\)/g) || []).length;
-        if (open > close) exp += ")".repeat(open - close);
-        exp = exp.replace(/\^/g, "**");
         
-        let result = eval(exp);
-        
-        // Handle Infinity explicitly
-        if (result === Infinity || result === -Infinity) {
-            inputData = "Infinity";
-            cursorIndex = inputData.length;
-            preview.innerText = "";
-            render();
-            return;
-        }
-
-        if (isNaN(result) || result === undefined) throw "Error";
-        
-        inputData = result.toString();
-        cursorIndex = inputData.length;
+        cursorIndex = 0; // Hide cursor while message is shown
         preview.innerText = "";
         render();
-    } catch {
-        inputData = "Error";
-        render();
-        setTimeout(() => { inputData = "0"; cursorIndex = 1; render(); }, 1500);
     }
 }
 </script>
