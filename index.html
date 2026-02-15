@@ -374,15 +374,14 @@ function liveCalculate() {
         
         let result = eval(exp);
         
+        // Removed explicit Infinity check. Now we just rely on JS native behavior.
         let displayResult = "";
-        if (result === Infinity || result === -Infinity) {
-             displayResult = "Infinity";
-        } else if (result !== undefined && !isNaN(result)) {
+        if (result !== undefined && !isNaN(result)) {
             displayResult = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
         }
         
         if (displayResult) {
-            // Use Dynamic Color (It will be green here since isMathMode is true, meaning input is not just "0")
+            // Use Dynamic Color
             preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + displayResult;
         } else { 
             preview.innerText = ""; 
