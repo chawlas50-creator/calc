@@ -66,7 +66,7 @@ html, body {
     z-index: 10;
 }
 
-/* NEW: Class for Blue Syntax Highlighting */
+/* Syntax Highlighting: Blue Operators/Symbols */
 .char-blue {
     color: #8ab4f8; 
 }
@@ -128,15 +128,19 @@ button:active {
 
 .top:active { background-color: #666 !important; }
 .operator:active { background-color: #777 !important; }
-
 .orange-btn:active { background-color: #ffb340 !important; }
 .blue-btn:active { background-color: #adcfff !important; }
+/* NEW: Green Active State */
+.green-btn:active { background-color: #248a3d !important; } 
 
 /* BASE COLORS */
 .operator { background: #5c525c; }
 .top { background: #4b404b; }
 .orange-btn { background: #ff9f0a; color: #202124; font-weight: 500; }
 .blue-btn { background: #8ab4f8; color: #202124; }
+
+/* NEW: Green Button Style */
+.green-btn { background: #34c759; color: #202124; }
 
 </style>
 </head>
@@ -178,7 +182,7 @@ button:active {
         <button onclick="handleTap(event, 'SIGN')">±</button>
         <button onclick="handleTap(event, '0')">0</button>
         <button onclick="handleTap(event, '.')">.</button>
-        <button class="blue-btn" onclick="handleTap(event, '=')">=</button>
+        <button class="green-btn" onclick="handleTap(event, '=')">=</button>
     </div>
 </div>
 
