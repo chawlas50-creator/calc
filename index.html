@@ -194,11 +194,66 @@ const preview = document.getElementById("preview");
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
 
+// --- AUDIO ENGINE (WEB AUDIO API) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioUnlocked = false;
+
+function unlockAudio() {
+    if (!audioUnlocked) {
+        audioCtx.resume().then(() => {
+            audioUnlocked = true;
+        });
+    }
+}
+
+function playClick(type) {
+    unlockAudio(); // Ensure iOS allows sound
+    
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (type === 'error') {
+        // --- RIGID SOUND (Replaces Thud) ---
+        // Clean, sharp, high pitch. Feels like hitting glass.
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // 1200 Hz
+        
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volume 0.2
+        // Quick fade to avoid "pop" at end
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.02); 
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.02); // 20ms duration
+    } else {
+        // --- STANDARD CLICK ---
+        // High Pitch, very short
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
+        
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.03);
+    }
+}
+// --------------------------------------
+
 render();
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 function handleTap(e, val) {
+    // Navigator Vibrate (Android only)
     if (navigator.vibrate) navigator.vibrate(5);
+    
+    // Play Click Sound (Standard)
+    playClick('click');
 
     // --- STANDARD BUTTONS ---
     if (val === 'AC') { 
@@ -235,7 +290,10 @@ function handleTap(e, val) {
             let end = cursorIndex;
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
             const currentNumber = inputData.substring(start + 1, end);
-            if (currentNumber.includes('.')) return; 
+            if (currentNumber.includes('.')) {
+                playClick('error'); // RIGID ERROR SOUND
+                return; 
+            }
             
             // Auto-Zero Check
             const prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
@@ -248,9 +306,9 @@ function handleTap(e, val) {
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
-        // 2. UPDATED: Block Everything after Decimal (Syntax Guard)
-        // If the previous character is '.', ignore operators, brackets, roots, power
+        // 2. Syntax Guard: Block Everything after Decimal
         if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
+            playClick('error'); // RIGID ERROR SOUND
             return;
         }
 
