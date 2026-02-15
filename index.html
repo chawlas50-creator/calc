@@ -130,7 +130,6 @@ button:active {
 .operator:active { background-color: #777 !important; }
 .orange-btn:active { background-color: #ffb340 !important; }
 .blue-btn:active { background-color: #adcfff !important; }
-/* UPDATED: Darker Green Active State */
 .green-btn:active { background-color: #1e7e34 !important; } 
 
 /* BASE COLORS */
@@ -138,8 +137,6 @@ button:active {
 .top { background: #4b404b; }
 .orange-btn { background: #ff9f0a; color: #202124; font-weight: 500; }
 .blue-btn { background: #8ab4f8; color: #202124; }
-
-/* UPDATED: Deeper, Richer Green Button Style */
 .green-btn { background: #28a745; color: white; }
 
 </style>
@@ -362,8 +359,12 @@ function liveCalculate() {
         try {
             let parts = inputData.split('.');
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            preview.innerText = parts.join('.');
-        } catch { preview.innerText = inputData; }
+            // Added Green Equals Sign here
+            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + parts.join('.');
+        } catch { 
+            // Added Green Equals Sign here too just in case
+            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + inputData; 
+        }
         return;
     }
     try {
@@ -375,10 +376,16 @@ function liveCalculate() {
         
         let result = eval(exp);
         
+        let displayResult = "";
         if (result === Infinity || result === -Infinity) {
-             preview.innerText = "Infinity";
+             displayResult = "Infinity";
         } else if (result !== undefined && !isNaN(result)) {
-            preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+            displayResult = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+        }
+        
+        if (displayResult) {
+            // Added Green Equals Sign here
+            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + displayResult;
         } else { 
             preview.innerText = ""; 
         }
