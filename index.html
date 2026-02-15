@@ -248,9 +248,9 @@ function handleTap(e, val) {
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
-        // 2. NEW: Block Operators after Decimal (Syntax Guard)
-        // If the previous character is '.', ignore any operator input
-        if (prevChar === '.' && ['+', '-', '*', '/', '^', '%'].includes(val)) {
+        // 2. UPDATED: Block Everything after Decimal (Syntax Guard)
+        // If the previous character is '.', ignore operators, brackets, roots, power
+        if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
             return;
         }
 
