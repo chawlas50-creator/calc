@@ -10,7 +10,7 @@
 /* RESET & BASICS */
 * { 
     box-sizing: border-box; 
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: rgba(0,0,0,0); /* Forced transparency for Safari highlights */
 }
 
 html, body {
@@ -95,17 +95,15 @@ html, body {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* Added rows definition to ensure they fit nicely */
-    grid-template-rows: repeat(6, 1fr); 
-    gap: 10px; /* Slightly reduced gap to fit 6 rows */
+    gap: 12px;
     padding: 10px 18px 20px 18px;
 }
 
 button {
-    /* Removed aspect-ratio to allow buttons to squash slightly if needed */
-    border-radius: 50px; /* Changed from 50% to 50px to handle non-perfect circles */
+    aspect-ratio: 1/1;
+    border-radius: 50%;
     border: none;
-    font-size: 28px; /* Slightly smaller font for density */
+    font-size: 30px;
     color: white;
     background: #1b1b1b;
     cursor: pointer;
@@ -114,18 +112,18 @@ button {
     justify-content: center;
     touch-action: manipulation;
     transition: transform 0.05s ease, background-color 0.05s ease;
-    height: 100%; /* Fill the grid cell */
 }
 
-/* MANDATORY ACTIVE STATES */
+/* MANDATORY ACTIVE STATES - Forcing colors to prevent Safari Gray-out */
 button:active { 
     transform: scale(0.92);
-    background-color: #444 !important;
+    background-color: #444 !important; /* Forces dark buttons to gray */
 }
 
 .top:active { background-color: #666 !important; }
 .operator:active { background-color: #777 !important; }
 
+/* Forces Orange and Blue to stay colored but brighter */
 .orange-btn:active { background-color: #ffb340 !important; }
 .blue-btn:active { background-color: #adcfff !important; }
 
@@ -147,15 +145,15 @@ button:active {
     </div>
 
     <div class="keypad">
-        <button class="orange-btn" onclick="handleTap(event, 'AC')">AC</button>
-        <button class="top" onclick="handleTap(event, '(')">(</button>
-        <button class="top" onclick="handleTap(event, ')')">)</button>
-        <button class="blue-btn" onclick="handleTap(event, 'DEL')">⌫</button>
-
-        <button class="top" onclick="handleTap(event, '^')">^</button>
         <button class="top" onclick="handleTap(event, '√')">√</button>
         <button class="top" onclick="handleTap(event, '%')">%</button>
-        <button class="blue-btn" onclick="handleTap(event, '/')">÷</button>
+        <button class="top" onclick="handleTap(event, '^')">^</button>
+        <button class="orange-btn" onclick="handleTap(event, 'AC')">AC</button>
+
+        <button class="top" onclick="handleTap(event, '(')">(</button>
+        <button class="top" onclick="handleTap(event, ')')">)</button>
+        <button class="operator" onclick="handleTap(event, '/')">÷</button>
+        <button class="blue-btn" onclick="handleTap(event, 'DEL')">⌫</button>
 
         <button onclick="handleTap(event, '7')">7</button>
         <button onclick="handleTap(event, '8')">8</button>
@@ -165,12 +163,12 @@ button:active {
         <button onclick="handleTap(event, '4')">4</button>
         <button onclick="handleTap(event, '5')">5</button>
         <button onclick="handleTap(event, '6')">6</button>
-        <button class="blue-btn" onclick="handleTap(event, '+')">+</button>
+        <button class="blue-btn" onclick="handleTap(event, '-')">−</button>
 
         <button onclick="handleTap(event, '1')">1</button>
         <button onclick="handleTap(event, '2')">2</button>
         <button onclick="handleTap(event, '3')">3</button>
-        <button class="blue-btn" onclick="handleTap(event, '-')">−</button>
+        <button class="blue-btn" onclick="handleTap(event, '+')">+</button>
 
         <button onclick="handleTap(event, 'SIGN')">±</button>
         <button onclick="handleTap(event, '0')">0</button>
@@ -213,6 +211,7 @@ function handleTap(e, val) {
         return; 
     } 
     else if (val === 'SIGN') {
+        // Keeping your original logic here as requested
         if (inputData.startsWith('-')) { 
             inputData = inputData.substring(1); 
             if(cursorIndex > 0) cursorIndex--; 
@@ -224,7 +223,7 @@ function handleTap(e, val) {
     else {
         // --- SMART MODE INPUT LOGIC ---
 
-        // 1. Decimal Validation
+        // 1. Decimal Validation (Your original logic)
         if (val === '.') {
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
@@ -240,12 +239,15 @@ function handleTap(e, val) {
 
         // 2. Starting Zero Logic
         if (inputData === "0") {
+            // Ignore basic operators if screen is just "0"
             if (basicOperators.includes(val) || val === '%') return; 
             
+            // Allow Dot to append (0.)
             if (val === '.') { 
                 inputData = "0."; 
                 cursorIndex = 2; 
             } else {
+                // Replace 0 with digit/minus/root
                 inputData = val; 
                 cursorIndex = val.length; 
             }
@@ -255,20 +257,23 @@ function handleTap(e, val) {
         }
 
         // 3. Triple Threat (Option 2: Clean Sweep)
+        // If we have "Op" then "-" (e.g. 5 * -)
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
-            if (val === '%') return; 
+            if (val === '%') return; // Ignore percentage
             if (basicOperators.includes(val) || val === '+') {
+                // Replace both with new operator
                 inputData = inputData.slice(0, cursorIndex - 2) + val + inputData.slice(cursorIndex);
-                cursorIndex--; 
+                cursorIndex--; // Removed 2, added 1
                 render();
                 liveCalculate();
                 return;
             }
         }
 
-        // 4. Percentage Swap
+        // 4. Percentage Swap (e.g. 5 + %) -> 5 %
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
+            // cursorIndex stays same
             render();
             liveCalculate();
             return;
@@ -276,10 +281,13 @@ function handleTap(e, val) {
 
         // 5. Smart Operator Swap
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
+            // Exception: Allow * - and / - and ^ -
             if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
                 // Append allowed
             } else {
+                // Swap previous operator with new one
                 inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
+                // cursorIndex stays same
                 render();
                 liveCalculate();
                 return;
@@ -333,6 +341,7 @@ function formatExpression(exp) {
 function liveCalculate() {
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
     
+    // Safety check: Don't show preview for imaginary number attempt or if empty
     if (inputData.includes('√-') || inputData === "") {
         preview.innerText = "";
         return;
@@ -355,6 +364,7 @@ function liveCalculate() {
         
         let result = eval(exp);
         
+        // Show Infinity in preview if it happens, but hide other errors
         if (result === Infinity || result === -Infinity) {
              preview.innerText = "Infinity";
         } else if (result !== undefined && !isNaN(result)) {
@@ -369,22 +379,28 @@ function calculate() {
     try {
         let exp = formatExpression(inputData);
         
+        // Auto-balance parentheses if they are uneven
         const open = (exp.match(/\(/g) || []).length;
         const close = (exp.match(/\)/g) || []).length;
         if (open > close) exp += ")".repeat(open - close);
         
         exp = exp.replace(/\^/g, "**");
         
+        // 1. RUN THE MATH FIRST
         let result = eval(exp);
         
+        // 2. CHECK FOR ERRORS (NaN)
+        // If result is valid (including Infinity), this block is skipped.
         if (isNaN(result)) {
+            // Now we check: Was this NaN caused by a negative root?
             if (inputData.includes('√-') || inputData.includes('√(-')) {
-                throw "Imaginary"; 
+                throw "Imaginary"; // Trigger the joke
             } else {
-                throw "Error"; 
+                throw "Error"; // Genuine syntax error
             }
         }
 
+        // 3. SUCCESS (Including Infinity)
         inputData = result.toString();
         cursorIndex = inputData.length;
         preview.innerText = "";
@@ -393,6 +409,7 @@ function calculate() {
     } catch (e) {
         if (e === "Imaginary") {
             inputData = "Sorry. I can't imagine numbers.";
+            // Reset slightly longer for the joke to land
             setTimeout(() => { 
                 inputData = "0"; 
                 cursorIndex = 1; 
@@ -407,7 +424,7 @@ function calculate() {
             }, 1500);
         }
         
-        cursorIndex = 0; 
+        cursorIndex = 0; // Hide cursor while message is shown
         preview.innerText = "";
         render();
     }
