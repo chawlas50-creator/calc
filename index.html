@@ -303,19 +303,15 @@ function render() {
     let html = "";
     const chars = inputData.split('');
     
-    // Define characters that should be colored BLUE
     const blueSymbols = ['+', '-', '*', '/', '^', '%', '√', '(', ')'];
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
     
     chars.forEach((char, index) => {
         let className = "char";
-        
-        // CHECK: Is this a symbol? If yes, add blue class
         if (blueSymbols.includes(char)) {
             className += " char-blue";
         }
-
         html += `<span class="${className}" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
         if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
     });
@@ -348,6 +344,9 @@ function formatExpression(exp) {
 }
 
 function liveCalculate() {
+    // 1. Determine Color: Orange if 0 (AC state), Green otherwise
+    const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
+
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
     
     if (inputData.includes('√-') || inputData === "") {
@@ -359,11 +358,10 @@ function liveCalculate() {
         try {
             let parts = inputData.split('.');
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            // Added Green Equals Sign here
-            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + parts.join('.');
+            // Use Dynamic Color
+            preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + parts.join('.');
         } catch { 
-            // Added Green Equals Sign here too just in case
-            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + inputData; 
+            preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + inputData; 
         }
         return;
     }
@@ -384,8 +382,8 @@ function liveCalculate() {
         }
         
         if (displayResult) {
-            // Added Green Equals Sign here
-            preview.innerHTML = `<span style="color: #28a745; margin-right: 8px;">=</span>` + displayResult;
+            // Use Dynamic Color (It will be green here since isMathMode is true, meaning input is not just "0")
+            preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + displayResult;
         } else { 
             preview.innerText = ""; 
         }
@@ -395,11 +393,9 @@ function liveCalculate() {
 function calculate() {
     try {
         let exp = formatExpression(inputData);
-        
         const open = (exp.match(/\(/g) || []).length;
         const close = (exp.match(/\)/g) || []).length;
         if (open > close) exp += ")".repeat(open - close);
-        
         exp = exp.replace(/\^/g, "**");
         
         let result = eval(exp);
