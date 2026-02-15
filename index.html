@@ -95,16 +95,17 @@ html, body {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* Added gap adjustment for 6 rows to fit nicely */
-    gap: 10px; 
+    /* Added rows definition to ensure they fit nicely */
+    grid-template-rows: repeat(6, 1fr); 
+    gap: 10px; /* Slightly reduced gap to fit 6 rows */
     padding: 10px 18px 20px 18px;
 }
 
 button {
-    aspect-ratio: 1/1; /* Keeps them round */
-    border-radius: 50%;
+    /* Removed aspect-ratio to allow buttons to squash slightly if needed */
+    border-radius: 50px; /* Changed from 50% to 50px to handle non-perfect circles */
     border: none;
-    font-size: 28px; /* Slightly smaller font to fit 6 rows */
+    font-size: 28px; /* Slightly smaller font for density */
     color: white;
     background: #1b1b1b;
     cursor: pointer;
@@ -113,19 +114,23 @@ button {
     justify-content: center;
     touch-action: manipulation;
     transition: transform 0.05s ease, background-color 0.05s ease;
+    height: 100%; /* Fill the grid cell */
 }
 
-/* ACTIVE STATES */
+/* MANDATORY ACTIVE STATES */
 button:active { 
     transform: scale(0.92);
     background-color: #444 !important;
 }
 
 .top:active { background-color: #666 !important; }
+.operator:active { background-color: #777 !important; }
+
 .orange-btn:active { background-color: #ffb340 !important; }
 .blue-btn:active { background-color: #adcfff !important; }
 
-/* COLORS */
+/* BASE COLORS */
+.operator { background: #5c525c; }
 .top { background: #4b404b; }
 .orange-btn { background: #ff9f0a; color: #202124; font-weight: 500; }
 .blue-btn { background: #8ab4f8; color: #202124; }
@@ -150,4 +155,263 @@ button:active {
         <button class="top" onclick="handleTap(event, '^')">^</button>
         <button class="top" onclick="handleTap(event, '√')">√</button>
         <button class="top" onclick="handleTap(event, '%')">%</button>
-        <button class="
+        <button class="blue-btn" onclick="handleTap(event, '/')">÷</button>
+
+        <button onclick="handleTap(event, '7')">7</button>
+        <button onclick="handleTap(event, '8')">8</button>
+        <button onclick="handleTap(event, '9')">9</button>
+        <button class="blue-btn" onclick="handleTap(event, '*')">×</button>
+
+        <button onclick="handleTap(event, '4')">4</button>
+        <button onclick="handleTap(event, '5')">5</button>
+        <button onclick="handleTap(event, '6')">6</button>
+        <button class="blue-btn" onclick="handleTap(event, '+')">+</button>
+
+        <button onclick="handleTap(event, '1')">1</button>
+        <button onclick="handleTap(event, '2')">2</button>
+        <button onclick="handleTap(event, '3')">3</button>
+        <button class="blue-btn" onclick="handleTap(event, '-')">−</button>
+
+        <button onclick="handleTap(event, 'SIGN')">±</button>
+        <button onclick="handleTap(event, '0')">0</button>
+        <button onclick="handleTap(event, '.')">.</button>
+        <button class="blue-btn" onclick="handleTap(event, '=')">=</button>
+    </div>
+</div>
+
+<script>
+let inputData = "0"; 
+let cursorIndex = 1; 
+
+const container = document.getElementById("virtualDisplay");
+const preview = document.getElementById("preview");
+
+// Operator Groups for Logic
+const basicOperators = ['+', '*', '/', '^']; 
+const allOperators = ['+', '-', '*', '/', '^'];
+
+render();
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+function handleTap(e, val) {
+    if (navigator.vibrate) navigator.vibrate(5);
+
+    // --- STANDARD BUTTONS ---
+    if (val === 'AC') { 
+        inputData = "0"; 
+        cursorIndex = 1; 
+    } 
+    else if (val === 'DEL') {
+        if (cursorIndex > 0) {
+            inputData = inputData.slice(0, cursorIndex - 1) + inputData.slice(cursorIndex);
+            cursorIndex--;
+            if (inputData === "") { inputData = "0"; cursorIndex = 1; }
+        }
+    } 
+    else if (val === '=') { 
+        calculate(); 
+        return; 
+    } 
+    else if (val === 'SIGN') {
+        if (inputData.startsWith('-')) { 
+            inputData = inputData.substring(1); 
+            if(cursorIndex > 0) cursorIndex--; 
+        } else { 
+            inputData = '-' + inputData; 
+            cursorIndex++; 
+        }
+    } 
+    else {
+        // --- SMART MODE INPUT LOGIC ---
+
+        // 1. Decimal Validation
+        if (val === '.') {
+            let start = cursorIndex - 1;
+            while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
+            let end = cursorIndex;
+            while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
+            const currentNumber = inputData.substring(start + 1, end);
+            if (currentNumber.includes('.')) return; 
+        }
+
+        // Identify Context
+        let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
+        let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
+
+        // 2. Starting Zero Logic
+        if (inputData === "0") {
+            if (basicOperators.includes(val) || val === '%') return; 
+            
+            if (val === '.') { 
+                inputData = "0."; 
+                cursorIndex = 2; 
+            } else {
+                inputData = val; 
+                cursorIndex = val.length; 
+            }
+            render();
+            if (val !== '=') liveCalculate();
+            return;
+        }
+
+        // 3. Triple Threat (Option 2: Clean Sweep)
+        if (allOperators.includes(prevPrevChar) && prevChar === '-') {
+            if (val === '%') return; 
+            if (basicOperators.includes(val) || val === '+') {
+                inputData = inputData.slice(0, cursorIndex - 2) + val + inputData.slice(cursorIndex);
+                cursorIndex--; 
+                render();
+                liveCalculate();
+                return;
+            }
+        }
+
+        // 4. Percentage Swap
+        if (allOperators.includes(prevChar) && val === '%') {
+            inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
+            render();
+            liveCalculate();
+            return;
+        }
+
+        // 5. Smart Operator Swap
+        if (allOperators.includes(prevChar) && allOperators.includes(val)) {
+            if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
+                // Append allowed
+            } else {
+                inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
+                render();
+                liveCalculate();
+                return;
+            }
+        }
+
+        // 6. Standard Insertion
+        inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex); 
+        cursorIndex += val.length;
+    }
+
+    render();
+    if (val !== '=') liveCalculate();
+}
+
+function render() {
+    let html = "";
+    const chars = inputData.split('');
+    if (cursorIndex === 0) html += `<span class="cursor"></span>`;
+    chars.forEach((char, index) => {
+        html += `<span class="char" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
+        if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
+    });
+    container.innerHTML = html;
+    const cursorEl = container.querySelector('.cursor');
+    if (cursorEl) cursorEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+}
+
+function moveCursor(newIndex, e) {
+    e.stopPropagation(); 
+    cursorIndex = newIndex;
+    render();
+}
+
+function focusEnd(e) {
+    const rect = container.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    cursorIndex = (clickX < rect.width / 2) ? 0 : inputData.length;
+    render();
+}
+
+function formatExpression(exp) {
+    exp = exp.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+    exp = exp.replace(/(\d)√/g, "$1*√");
+    exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)").replace(/√\(/g, "Math.sqrt(").replace(/√/g, "Math.sqrt(");
+    exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
+    exp = exp.replace(/(\d)\(/g, "$1*(").replace(/\)(\d)/g, ")*$1").replace(/%(\d)/g, "%*$1").replace(/%/g, "/100");
+    return exp;
+}
+
+function liveCalculate() {
+    const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
+    
+    if (inputData.includes('√-') || inputData === "") {
+        preview.innerText = "";
+        return;
+    }
+
+    if (!isMathMode) {
+        try {
+            let parts = inputData.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            preview.innerText = parts.join('.');
+        } catch { preview.innerText = inputData; }
+        return;
+    }
+    try {
+        let exp = formatExpression(inputData);
+        const open = (exp.match(/\(/g) || []).length;
+        const close = (exp.match(/\)/g) || []).length;
+        if (open > close) exp += ")".repeat(open - close);
+        exp = exp.replace(/\^/g, "**");
+        
+        let result = eval(exp);
+        
+        if (result === Infinity || result === -Infinity) {
+             preview.innerText = "Infinity";
+        } else if (result !== undefined && !isNaN(result)) {
+            preview.innerText = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
+        } else { 
+            preview.innerText = ""; 
+        }
+    } catch { preview.innerText = ""; }
+}
+
+function calculate() {
+    try {
+        let exp = formatExpression(inputData);
+        
+        const open = (exp.match(/\(/g) || []).length;
+        const close = (exp.match(/\)/g) || []).length;
+        if (open > close) exp += ")".repeat(open - close);
+        
+        exp = exp.replace(/\^/g, "**");
+        
+        let result = eval(exp);
+        
+        if (isNaN(result)) {
+            if (inputData.includes('√-') || inputData.includes('√(-')) {
+                throw "Imaginary"; 
+            } else {
+                throw "Error"; 
+            }
+        }
+
+        inputData = result.toString();
+        cursorIndex = inputData.length;
+        preview.innerText = "";
+        render();
+
+    } catch (e) {
+        if (e === "Imaginary") {
+            inputData = "Sorry. I can't imagine numbers.";
+            setTimeout(() => { 
+                inputData = "0"; 
+                cursorIndex = 1; 
+                render(); 
+            }, 2500);
+        } else {
+            inputData = "Error";
+            setTimeout(() => { 
+                inputData = "0"; 
+                cursorIndex = 1; 
+                render(); 
+            }, 1500);
+        }
+        
+        cursorIndex = 0; 
+        preview.innerText = "";
+        render();
+    }
+}
+</script>
+</body>
+</html>
