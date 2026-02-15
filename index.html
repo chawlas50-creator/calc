@@ -237,7 +237,6 @@ function handleTap(e, val) {
             const currentNumber = inputData.substring(start + 1, end);
             if (currentNumber.includes('.')) return; 
             
-            // Auto-Zero Check: If following an operator, bracket, or %, inject "0."
             const prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
             if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) {
                 val = "0.";
@@ -309,7 +308,8 @@ function render() {
     let html = "";
     const chars = inputData.split('');
     
-    const blueSymbols = ['+', '-', '*', '/', '^', '%', '√', '(', ')'];
+    // UPDATED: Only basic operators are Blue. Everything else is White.
+    const blueSymbols = ['+', '-', '*', '/'];
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
     
