@@ -228,7 +228,7 @@ function handleTap(e, val) {
     else {
         // --- SMART MODE INPUT LOGIC ---
 
-        // 1. Decimal Validation
+        // 1. Decimal Validation & Auto-Zero
         if (val === '.') {
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
@@ -236,6 +236,12 @@ function handleTap(e, val) {
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
             const currentNumber = inputData.substring(start + 1, end);
             if (currentNumber.includes('.')) return; 
+            
+            // Auto-Zero Check: If following an operator, bracket, or %, inject "0."
+            const prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
+            if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) {
+                val = "0.";
+            }
         }
 
         // Identify Context
@@ -344,7 +350,6 @@ function formatExpression(exp) {
 }
 
 function liveCalculate() {
-    // 1. Determine Color: Orange if 0 (AC state), Green otherwise
     const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
 
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
@@ -358,7 +363,6 @@ function liveCalculate() {
         try {
             let parts = inputData.split('.');
             parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            // Use Dynamic Color
             preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + parts.join('.');
         } catch { 
             preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + inputData; 
@@ -374,14 +378,12 @@ function liveCalculate() {
         
         let result = eval(exp);
         
-        // Removed explicit Infinity check. Now we just rely on JS native behavior.
         let displayResult = "";
         if (result !== undefined && !isNaN(result)) {
             displayResult = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
         }
         
         if (displayResult) {
-            // Use Dynamic Color
             preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + displayResult;
         } else { 
             preview.innerText = ""; 
