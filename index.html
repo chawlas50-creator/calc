@@ -237,6 +237,7 @@ function handleTap(e, val) {
             const currentNumber = inputData.substring(start + 1, end);
             if (currentNumber.includes('.')) return; 
             
+            // Auto-Zero Check
             const prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
             if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) {
                 val = "0.";
@@ -247,7 +248,13 @@ function handleTap(e, val) {
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
-        // 2. Starting Zero Logic
+        // 2. NEW: Block Operators after Decimal (Syntax Guard)
+        // If the previous character is '.', ignore any operator input
+        if (prevChar === '.' && ['+', '-', '*', '/', '^', '%'].includes(val)) {
+            return;
+        }
+
+        // 3. Starting Zero Logic
         if (inputData === "0") {
             if (basicOperators.includes(val) || val === '%') return; 
             
@@ -263,7 +270,7 @@ function handleTap(e, val) {
             return;
         }
 
-        // 3. Triple Threat (Option 2: Clean Sweep)
+        // 4. Triple Threat (Option 2: Clean Sweep)
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
             if (val === '%') return; 
             if (basicOperators.includes(val) || val === '+') {
@@ -275,7 +282,7 @@ function handleTap(e, val) {
             }
         }
 
-        // 4. Percentage Swap
+        // 5. Percentage Swap
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
             render();
@@ -283,7 +290,7 @@ function handleTap(e, val) {
             return;
         }
 
-        // 5. Smart Operator Swap
+        // 6. Smart Operator Swap
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
             if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
                 // Append allowed
@@ -295,7 +302,7 @@ function handleTap(e, val) {
             }
         }
 
-        // 6. Standard Insertion
+        // 7. Standard Insertion
         inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex); 
         cursorIndex += val.length;
     }
@@ -308,7 +315,7 @@ function render() {
     let html = "";
     const chars = inputData.split('');
     
-    // UPDATED: Only basic operators are Blue. Everything else is White.
+    // Only basic operators are Blue
     const blueSymbols = ['+', '-', '*', '/'];
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
