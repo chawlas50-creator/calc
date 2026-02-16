@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -218,27 +218,20 @@ function playClick(type) {
     gainNode.connect(audioCtx.destination);
 
     if (type === 'error') {
-        // --- RIGID SOUND (Replaces Thud) ---
-        // Clean, sharp, high pitch. Feels like hitting glass.
+        // RIGID SOUND (Blocked/Error)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // 1200 Hz
-        
-        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volume 0.2
-        // Quick fade to avoid "pop" at end
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime); 
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.02); 
-        
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.02); // 20ms duration
+        osc.stop(audioCtx.currentTime + 0.02); 
     } else {
-        // --- STANDARD CLICK ---
-        // High Pitch, very short
+        // STANDARD CLICK (Success)
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
-        
         gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
-        
         osc.start();
         osc.stop(audioCtx.currentTime + 0.03);
     }
@@ -249,18 +242,17 @@ render();
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 function handleTap(e, val) {
-    // Navigator Vibrate (Android only)
     if (navigator.vibrate) navigator.vibrate(5);
     
-    // Play Click Sound (Standard)
-    playClick('click');
 
     // --- STANDARD BUTTONS ---
     if (val === 'AC') { 
+        playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
     } 
     else if (val === 'DEL') {
+        playClick('click');
         if (cursorIndex > 0) {
             inputData = inputData.slice(0, cursorIndex - 1) + inputData.slice(cursorIndex);
             cursorIndex--;
@@ -268,10 +260,20 @@ function handleTap(e, val) {
         }
     } 
     else if (val === '=') { 
+        // 2. HANGING OPERATOR GUARD (Check the very last character of input)
+        // If it ends in an operator, bracket, square root, or dot -> BLOCK IT.
+        const lastChar = inputData.slice(-1);
+        if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
+             playClick('error'); // Block calculation
+             return;
+        }
+        
+        playClick('click');
         calculate(); 
         return; 
     } 
     else if (val === 'SIGN') {
+        playClick('click');
         if (inputData.startsWith('-')) { 
             inputData = inputData.substring(1); 
             if(cursorIndex > 0) cursorIndex--; 
@@ -283,6 +285,10 @@ function handleTap(e, val) {
     else {
         // --- SMART MODE INPUT LOGIC ---
 
+        // Identify Context
+        let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
+        let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
+
         // 1. Decimal Validation & Auto-Zero
         if (val === '.') {
             let start = cursorIndex - 1;
@@ -291,31 +297,32 @@ function handleTap(e, val) {
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
             const currentNumber = inputData.substring(start + 1, end);
             if (currentNumber.includes('.')) {
-                playClick('error'); // RIGID ERROR SOUND
+                playClick('error'); 
                 return; 
             }
-            
-            // Auto-Zero Check
-            const prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
             if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) {
                 val = "0.";
             }
         }
 
-        // Identify Context
-        let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
-        let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
-
-        // 2. Syntax Guard: Block Everything after Decimal
+        // 2. Syntax Guard: Block Operators after Decimal
         if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
-            playClick('error'); // RIGID ERROR SOUND
+            playClick('error'); 
             return;
         }
 
-        // 3. Starting Zero Logic
+        // 3. PERCENT GUARD (Block ^, √, % after %)
+        if (prevChar === '%' && ['^', '√', '%'].includes(val)) {
+            playClick('error');
+            return;
+        }
+
+        // Play Success Click if we passed guards
+        playClick('click');
+
+        // 4. Starting Zero Logic
         if (inputData === "0") {
             if (basicOperators.includes(val) || val === '%') return; 
-            
             if (val === '.') { 
                 inputData = "0."; 
                 cursorIndex = 2; 
@@ -328,7 +335,7 @@ function handleTap(e, val) {
             return;
         }
 
-        // 4. Triple Threat (Option 2: Clean Sweep)
+        // 5. Triple Threat
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
             if (val === '%') return; 
             if (basicOperators.includes(val) || val === '+') {
@@ -340,7 +347,7 @@ function handleTap(e, val) {
             }
         }
 
-        // 5. Percentage Swap
+        // 6. Percentage Swap
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
             render();
@@ -348,7 +355,7 @@ function handleTap(e, val) {
             return;
         }
 
-        // 6. Smart Operator Swap
+        // 7. Smart Operator Swap
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
             if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
                 // Append allowed
@@ -360,7 +367,6 @@ function handleTap(e, val) {
             }
         }
 
-        // 7. Standard Insertion
         inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex); 
         cursorIndex += val.length;
     }
@@ -372,17 +378,13 @@ function handleTap(e, val) {
 function render() {
     let html = "";
     const chars = inputData.split('');
-    
-    // Only basic operators are Blue
     const blueSymbols = ['+', '-', '*', '/'];
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
     
     chars.forEach((char, index) => {
         let className = "char";
-        if (blueSymbols.includes(char)) {
-            className += " char-blue";
-        }
+        if (blueSymbols.includes(char)) className += " char-blue";
         html += `<span class="${className}" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
         if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
     });
@@ -414,9 +416,25 @@ function formatExpression(exp) {
     return exp;
 }
 
+// --- NEW HELPER: Safe Calculation with Rounding ---
+function safeEvaluate(exp) {
+    let formatted = formatExpression(exp);
+    const open = (formatted.match(/\(/g) || []).length;
+    const close = (formatted.match(/\)/g) || []).length;
+    if (open > close) formatted += ")".repeat(open - close);
+    formatted = formatted.replace(/\^/g, "**");
+
+    let result = eval(formatted);
+
+    // 3. FLOATING POINT FIX (Precision Rounding)
+    if (typeof result === 'number' && !Number.isInteger(result)) {
+        result = parseFloat(result.toPrecision(12));
+    }
+    return result;
+}
+
 function liveCalculate() {
     const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
-
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
     
     if (inputData.includes('√-') || inputData === "") {
@@ -435,13 +453,7 @@ function liveCalculate() {
         return;
     }
     try {
-        let exp = formatExpression(inputData);
-        const open = (exp.match(/\(/g) || []).length;
-        const close = (exp.match(/\)/g) || []).length;
-        if (open > close) exp += ")".repeat(open - close);
-        exp = exp.replace(/\^/g, "**");
-        
-        let result = eval(exp);
+        let result = safeEvaluate(inputData); // Use new safe evaluator
         
         let displayResult = "";
         if (result !== undefined && !isNaN(result)) {
@@ -458,13 +470,8 @@ function liveCalculate() {
 
 function calculate() {
     try {
-        let exp = formatExpression(inputData);
-        const open = (exp.match(/\(/g) || []).length;
-        const close = (exp.match(/\)/g) || []).length;
-        if (open > close) exp += ")".repeat(open - close);
-        exp = exp.replace(/\^/g, "**");
-        
-        let result = eval(exp);
+        // Use new safe evaluator
+        let result = safeEvaluate(inputData);
         
         if (isNaN(result)) {
             if (inputData.includes('√-') || inputData.includes('√(-')) {
@@ -495,7 +502,6 @@ function calculate() {
                 render(); 
             }, 1500);
         }
-        
         cursorIndex = 0; 
         preview.innerText = "";
         render();
