@@ -36,12 +36,32 @@ html, body {
 .display {
     background: #2b262b;
     padding: 22px 20px;
-    height: 30vh;
+    height: 35vh; /* Slightly taller for history */
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     position: relative;
     overflow: hidden;
+}
+
+/* NEW: HISTORY SHELF (The "Upward" Text) */
+.history {
+    width: 100%;
+    text-align: right;
+    font-size: 28px; /* Smaller than main input */
+    color: #9aa0a6;  /* Gray like preview */
+    min-height: 35px;
+    margin-bottom: 5px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: color 0.2s;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* Visual cue that it's clickable */
+.history:active {
+    color: #fff;
 }
 
 .virtual-input-container {
@@ -58,7 +78,7 @@ html, body {
 .virtual-input-container::-webkit-scrollbar { display: none; }
 
 .char {
-    font-size: 44px;
+    font-size: 48px; /* Slightly bigger result font */
     color: white;
     cursor: pointer;
     position: relative;
@@ -66,14 +86,12 @@ html, body {
     z-index: 10;
 }
 
-/* Syntax Highlighting: Blue Operators/Symbols */
-.char-blue {
-    color: #8ab4f8; 
-}
+/* Syntax Highlighting */
+.char-blue { color: #8ab4f8; }
 
 .cursor {
     width: 2px;
-    height: 44px;
+    height: 48px;
     background-color: #8ab4f8;
     display: inline-block;
     animation: blink 1s step-end infinite;
@@ -91,7 +109,7 @@ html, body {
     color: #9aa0a6;
     text-align: right;
     min-height: 40px;
-    margin-top: 10px;
+    margin-top: 5px;
     font-weight: 300;
 }
 
@@ -120,7 +138,6 @@ button {
     height: 100%; 
 }
 
-/* MANDATORY ACTIVE STATES */
 button:active { 
     transform: scale(0.92);
     background-color: #444 !important;
@@ -146,6 +163,8 @@ button:active {
 
 <div class="calculator">
     <div class="display" onclick="focusEnd(event)">
+        <div class="history" id="historyDisplay" onclick="restoreHistory(event)"></div>
+        
         <div class="virtual-input-container" id="virtualDisplay"></div>
         <div class="preview" id="preview"></div>
     </div>
@@ -186,39 +205,36 @@ button:active {
 <script>
 let inputData = "0"; 
 let cursorIndex = 1; 
+let historyData = ""; // Stores the equation when it moves up
 
 const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
+const historyEl = document.getElementById("historyDisplay");
 
-// Operator Groups for Logic
+// Operator Groups
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
 
-// --- AUDIO ENGINE (WEB AUDIO API) ---
+// --- AUDIO ENGINE ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let audioUnlocked = false;
 
 function unlockAudio() {
     if (!audioUnlocked) {
-        audioCtx.resume().then(() => {
-            audioUnlocked = true;
-        });
+        audioCtx.resume().then(() => { audioUnlocked = true; });
     }
 }
 
 function playClick(type) {
-    unlockAudio(); // Ensure iOS allows sound
-    
+    unlockAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
     if (type === 'error') {
-        // RIGID SOUND (Blocked/Error)
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1200, audioCtx.currentTime); 
         gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
@@ -226,7 +242,6 @@ function playClick(type) {
         osc.start();
         osc.stop(audioCtx.currentTime + 0.02); 
     } else {
-        // STANDARD CLICK (Success)
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
@@ -236,20 +251,19 @@ function playClick(type) {
         osc.stop(audioCtx.currentTime + 0.03);
     }
 }
-// --------------------------------------
 
 render();
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 function handleTap(e, val) {
     if (navigator.vibrate) navigator.vibrate(5);
-    
 
-    // --- STANDARD BUTTONS ---
     if (val === 'AC') { 
         playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
+        historyData = ""; // Clear history on AC
+        historyEl.innerText = "";
     } 
     else if (val === 'DEL') {
         playClick('click');
@@ -260,14 +274,12 @@ function handleTap(e, val) {
         }
     } 
     else if (val === '=') { 
-        // 2. HANGING OPERATOR GUARD (Check the very last character of input)
-        // If it ends in an operator, bracket, square root, or dot -> BLOCK IT.
+        // Hanging Operator Guard
         const lastChar = inputData.slice(-1);
         if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
-             playClick('error'); // Block calculation
+             playClick('error'); 
              return;
         }
-        
         playClick('click');
         calculate(); 
         return; 
@@ -283,59 +295,39 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // --- SMART MODE INPUT LOGIC ---
-
-        // Identify Context
+        // Smart Mode Logic (Same as before)
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
-        // 1. Decimal Validation & Auto-Zero
         if (val === '.') {
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
             let end = cursorIndex;
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
             const currentNumber = inputData.substring(start + 1, end);
-            if (currentNumber.includes('.')) {
-                playClick('error'); 
-                return; 
-            }
-            if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) {
-                val = "0.";
-            }
+            if (currentNumber.includes('.')) { playClick('error'); return; }
+            if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) val = "0.";
         }
 
-        // 2. Syntax Guard: Block Operators after Decimal
         if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
-            playClick('error'); 
-            return;
+            playClick('error'); return;
         }
 
-        // 3. PERCENT GUARD (Block ^, √, % after %)
         if (prevChar === '%' && ['^', '√', '%'].includes(val)) {
-            playClick('error');
-            return;
+            playClick('error'); return;
         }
 
-        // Play Success Click if we passed guards
         playClick('click');
 
-        // 4. Starting Zero Logic
         if (inputData === "0") {
             if (basicOperators.includes(val) || val === '%') return; 
-            if (val === '.') { 
-                inputData = "0."; 
-                cursorIndex = 2; 
-            } else {
-                inputData = val; 
-                cursorIndex = val.length; 
-            }
+            if (val === '.') { inputData = "0."; cursorIndex = 2; } 
+            else { inputData = val; cursorIndex = val.length; }
             render();
             if (val !== '=') liveCalculate();
             return;
         }
 
-        // 5. Triple Threat
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
             if (val === '%') return; 
             if (basicOperators.includes(val) || val === '+') {
@@ -347,7 +339,6 @@ function handleTap(e, val) {
             }
         }
 
-        // 6. Percentage Swap
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
             render();
@@ -355,10 +346,9 @@ function handleTap(e, val) {
             return;
         }
 
-        // 7. Smart Operator Swap
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
             if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
-                // Append allowed
+                // Allowed
             } else {
                 inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
                 render();
@@ -401,6 +391,9 @@ function moveCursor(newIndex, e) {
 }
 
 function focusEnd(e) {
+    // If clicking history, do nothing here (handled by restoreHistory)
+    if(e.target.id === 'historyDisplay') return;
+
     const rect = container.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     cursorIndex = (clickX < rect.width / 2) ? 0 : inputData.length;
@@ -416,7 +409,6 @@ function formatExpression(exp) {
     return exp;
 }
 
-// --- NEW HELPER: Safe Calculation with Rounding ---
 function safeEvaluate(exp) {
     let formatted = formatExpression(exp);
     const open = (formatted.match(/\(/g) || []).length;
@@ -425,8 +417,6 @@ function safeEvaluate(exp) {
     formatted = formatted.replace(/\^/g, "**");
 
     let result = eval(formatted);
-
-    // 3. FLOATING POINT FIX (Precision Rounding)
     if (typeof result === 'number' && !Number.isInteger(result)) {
         result = parseFloat(result.toPrecision(12));
     }
@@ -434,6 +424,7 @@ function safeEvaluate(exp) {
 }
 
 function liveCalculate() {
+    // Standard preview logic
     const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
     
@@ -453,8 +444,7 @@ function liveCalculate() {
         return;
     }
     try {
-        let result = safeEvaluate(inputData); // Use new safe evaluator
-        
+        let result = safeEvaluate(inputData);
         let displayResult = "";
         if (result !== undefined && !isNaN(result)) {
             displayResult = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
@@ -470,42 +460,48 @@ function liveCalculate() {
 
 function calculate() {
     try {
-        // Use new safe evaluator
         let result = safeEvaluate(inputData);
         
-        if (isNaN(result)) {
-            if (inputData.includes('√-') || inputData.includes('√(-')) {
-                throw "Imaginary"; 
-            } else {
-                throw "Error"; 
-            }
-        }
+        if (isNaN(result)) throw "Error";
 
+        // --- NEW HISTORY LOGIC ---
+        // 1. Move current input to History
+        historyData = inputData;
+        historyEl.innerText = historyData;
+
+        // 2. Set Input to Result
         inputData = result.toString();
         cursorIndex = inputData.length;
+        
+        // 3. Clear Preview (since result is now main)
         preview.innerText = "";
+        
         render();
 
     } catch (e) {
-        if (e === "Imaginary") {
-            inputData = "Sorry. I can't imagine numbers.";
-            setTimeout(() => { 
-                inputData = "0"; 
-                cursorIndex = 1; 
-                render(); 
-            }, 2500);
-        } else {
-            inputData = "Error";
-            setTimeout(() => { 
-                inputData = "0"; 
-                cursorIndex = 1; 
-                render(); 
-            }, 1500);
-        }
+        inputData = "Error";
+        setTimeout(() => { inputData = "0"; cursorIndex = 1; render(); }, 1500);
         cursorIndex = 0; 
         preview.innerText = "";
         render();
     }
+}
+
+// --- NEW FUNCTION: Restore History ---
+function restoreHistory(e) {
+    e.stopPropagation(); // Stop global click
+    if (historyData === "") return;
+
+    playClick('click'); // Feedback
+
+    // Swap back
+    inputData = historyData;
+    historyData = "";
+    historyEl.innerText = ""; // Clear history display
+    cursorIndex = inputData.length; // Cursor at end
+
+    render();
+    liveCalculate(); // Show the preview again
 }
 </script>
 </body>
