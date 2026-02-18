@@ -246,6 +246,9 @@ button:active { transform: scale(0.92); background-color: #444 !important; }
 let inputData = "0"; 
 let cursorIndex = 1; 
 
+// NEW FLAG: Prevents double-equals history spam
+let isResultDisplayed = false; 
+
 // Load History Tape from "Hard Drive"
 let historyStorage = JSON.parse(localStorage.getItem('pixel_history')) || [];
 
@@ -307,15 +310,16 @@ function handleTap(e, val) {
         playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
+        isResultDisplayed = false; // Reset flag
         
         // Clear Shelf (Visual + Storage)
         lastResult = "";
         shelfEl.innerText = "";
         localStorage.setItem('pixel_shelf', ""); 
-        // Note: We do NOT clear the history tape (historyStorage) on AC, just like iOS.
     } 
     else if (val === 'DEL') {
         playClick('click');
+        isResultDisplayed = false; // Reset flag
         if (cursorIndex > 0) {
             inputData = inputData.slice(0, cursorIndex - 1) + inputData.slice(cursorIndex);
             cursorIndex--;
@@ -323,6 +327,9 @@ function handleTap(e, val) {
         }
     } 
     else if (val === '=') { 
+        // NEW LOGIC: Stop if we just calculated!
+        if (isResultDisplayed) return;
+
         const lastChar = inputData.slice(-1);
         if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
              playClick('error'); return;
@@ -333,6 +340,7 @@ function handleTap(e, val) {
     } 
     else if (val === 'SIGN') {
         playClick('click');
+        isResultDisplayed = false; // Reset flag
         if (inputData.startsWith('-')) { 
             inputData = inputData.substring(1); 
             if(cursorIndex > 0) cursorIndex--; 
@@ -342,6 +350,9 @@ function handleTap(e, val) {
         }
     } 
     else {
+        // Any other button (numbers, operators) resets the flag
+        isResultDisplayed = false; 
+
         // --- SMART INPUT LOGIC ---
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
@@ -529,6 +540,9 @@ function calculate() {
         cursorIndex = inputData.length;
         preview.innerText = "";
         render();
+        
+        // NEW: Set flag so next '=' is ignored
+        isResultDisplayed = true; 
 
     } catch (e) {
         if (e === "Imaginary") {
@@ -551,7 +565,6 @@ function toggleHistory(e) {
     if (overlay.classList.contains('active')) {
         overlay.classList.remove('active');
     } else {
-        // RENDER ON OPEN (So it's always fresh from storage)
         renderOverlay();
         overlay.classList.add('active');
     }
@@ -577,6 +590,7 @@ function restoreFromOverlay(val) {
     overlay.classList.remove('active');
     render();
     liveCalculate();
+    isResultDisplayed = false; // Reset flag so they can calculate immediately
 }
 
 function restoreLast(e) {
@@ -585,7 +599,7 @@ function restoreLast(e) {
     playClick('click'); 
     inputData = lastResult;
     
-    // Clear Shelf when restored (Visual + Storage)
+    // Clear Shelf
     lastResult = "";
     shelfEl.innerText = ""; 
     localStorage.setItem('pixel_shelf', ""); 
@@ -593,9 +607,9 @@ function restoreLast(e) {
     cursorIndex = inputData.length; 
     render();
     liveCalculate(); 
+    isResultDisplayed = false; // Reset flag
 }
 </script>
-
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
