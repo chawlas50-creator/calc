@@ -36,7 +36,7 @@ html, body {
 .display {
     background: #2b262b;
     padding: 22px 20px;
-    height: 35vh; /* Slightly taller for history */
+    height: 35vh; 
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -44,12 +44,12 @@ html, body {
     overflow: hidden;
 }
 
-/* NEW: HISTORY SHELF (The "Upward" Text) */
+/* HISTORY SHELF */
 .history {
     width: 100%;
     text-align: right;
-    font-size: 28px; /* Smaller than main input */
-    color: #9aa0a6;  /* Gray like preview */
+    font-size: 28px; 
+    color: #9aa0a6;  
     min-height: 35px;
     margin-bottom: 5px;
     font-weight: 300;
@@ -59,10 +59,7 @@ html, body {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-/* Visual cue that it's clickable */
-.history:active {
-    color: #fff;
-}
+.history:active { color: #fff; }
 
 .virtual-input-container {
     width: 100%;
@@ -78,7 +75,7 @@ html, body {
 .virtual-input-container::-webkit-scrollbar { display: none; }
 
 .char {
-    font-size: 48px; /* Slightly bigger result font */
+    font-size: 48px; 
     color: white;
     cursor: pointer;
     position: relative;
@@ -88,6 +85,12 @@ html, body {
 
 /* Syntax Highlighting */
 .char-blue { color: #8ab4f8; }
+
+/* NEW: Ghost Bracket Style */
+.ghost {
+    opacity: 0.3; /* Transparent look */
+    pointer-events: none; /* Can't click them */
+}
 
 .cursor {
     width: 2px;
@@ -164,7 +167,6 @@ button:active {
 <div class="calculator">
     <div class="display" onclick="focusEnd(event)">
         <div class="history" id="historyDisplay" onclick="restoreHistory(event)"></div>
-        
         <div class="virtual-input-container" id="virtualDisplay"></div>
         <div class="preview" id="preview"></div>
     </div>
@@ -205,13 +207,12 @@ button:active {
 <script>
 let inputData = "0"; 
 let cursorIndex = 1; 
-let historyData = ""; // Stores the equation when it moves up
+let historyData = ""; 
 
 const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
 const historyEl = document.getElementById("historyDisplay");
 
-// Operator Groups
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
 
@@ -262,7 +263,7 @@ function handleTap(e, val) {
         playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
-        historyData = ""; // Clear history on AC
+        historyData = "";
         historyEl.innerText = "";
     } 
     else if (val === 'DEL') {
@@ -274,7 +275,6 @@ function handleTap(e, val) {
         }
     } 
     else if (val === '=') { 
-        // Hanging Operator Guard
         const lastChar = inputData.slice(-1);
         if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
              playClick('error'); 
@@ -295,7 +295,6 @@ function handleTap(e, val) {
         }
     } 
     else {
-        // Smart Mode Logic (Same as before)
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
@@ -372,14 +371,28 @@ function render() {
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
     
+    // 1. Render Real Characters
     chars.forEach((char, index) => {
         let className = "char";
         if (blueSymbols.includes(char)) className += " char-blue";
         html += `<span class="${className}" onclick="moveCursor(${index + 1}, event)">${char}</span>`;
         if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
     });
+
+    // 2. GHOST BRACKET LOGIC
+    const openCount = (inputData.match(/\(/g) || []).length;
+    const closeCount = (inputData.match(/\)/g) || []).length;
+    const balance = openCount - closeCount;
+
+    if (balance > 0) {
+        for (let i = 0; i < balance; i++) {
+            html += `<span class="char ghost">)</span>`;
+        }
+    }
     
     container.innerHTML = html;
+    
+    // Auto-scroll logic
     const cursorEl = container.querySelector('.cursor');
     if (cursorEl) cursorEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
 }
@@ -391,9 +404,7 @@ function moveCursor(newIndex, e) {
 }
 
 function focusEnd(e) {
-    // If clicking history, do nothing here (handled by restoreHistory)
     if(e.target.id === 'historyDisplay') return;
-
     const rect = container.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     cursorIndex = (clickX < rect.width / 2) ? 0 : inputData.length;
@@ -424,7 +435,6 @@ function safeEvaluate(exp) {
 }
 
 function liveCalculate() {
-    // Standard preview logic
     const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
     
@@ -461,21 +471,23 @@ function liveCalculate() {
 function calculate() {
     try {
         let result = safeEvaluate(inputData);
-        
         if (isNaN(result)) throw "Error";
 
-        // --- NEW HISTORY LOGIC ---
-        // 1. Move current input to History
+        // --- NEW: SOLIDIFY GHOST BRACKETS ---
+        // Before moving to history, permanently append missing brackets
+        const open = (inputData.match(/\(/g) || []).length;
+        const close = (inputData.match(/\)/g) || []).length;
+        if (open > close) {
+            inputData += ")".repeat(open - close);
+        }
+
+        // Move to history
         historyData = inputData;
         historyEl.innerText = historyData;
 
-        // 2. Set Input to Result
         inputData = result.toString();
         cursorIndex = inputData.length;
-        
-        // 3. Clear Preview (since result is now main)
         preview.innerText = "";
-        
         render();
 
     } catch (e) {
@@ -487,21 +499,16 @@ function calculate() {
     }
 }
 
-// --- NEW FUNCTION: Restore History ---
 function restoreHistory(e) {
-    e.stopPropagation(); // Stop global click
+    e.stopPropagation(); 
     if (historyData === "") return;
-
-    playClick('click'); // Feedback
-
-    // Swap back
+    playClick('click'); 
     inputData = historyData;
     historyData = "";
-    historyEl.innerText = ""; // Clear history display
-    cursorIndex = inputData.length; // Cursor at end
-
+    historyEl.innerText = ""; 
+    cursorIndex = inputData.length; 
     render();
-    liveCalculate(); // Show the preview again
+    liveCalculate(); 
 }
 </script>
 </body>
