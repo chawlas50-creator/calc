@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixel-calc-v7'; // <--- Change this number (v2, v3) to force update!
+const CACHE_NAME = 'pixel-calc-v8'; // <--- Change this number (v2, v3) to force update!
 const ASSETS = [
   './',
   './index.html',
