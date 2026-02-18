@@ -48,8 +48,51 @@ html, body {
     overflow: hidden;
 }
 
-/* HISTORY SHELF */
-.history {
+/* HISTORY ICON (Top Right) */
+.history-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    opacity: 0.6;
+    cursor: pointer;
+    z-index: 50;
+    transition: opacity 0.2s;
+}
+.history-btn:active { opacity: 1; }
+.history-btn svg { width: 100%; height: 100%; fill: #9aa0a6; }
+
+/* HISTORY OVERLAY (Hidden by default) */
+.history-overlay {
+    position: absolute;
+    top: 35vh; /* Starts below display */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1c1c1e;
+    z-index: 100;
+    display: none; /* Hidden initially */
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.history-overlay.active { display: flex; }
+
+.history-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+.hist-exp { color: #9aa0a6; font-size: 20px; margin-bottom: 4px; }
+.hist-res { color: #8ab4f8; font-size: 28px; font-weight: 500; }
+
+/* HISTORY SHELF (Immediate Last Result) */
+.history-shelf {
     width: 100%;
     text-align: right;
     font-size: 28px; 
@@ -58,12 +101,10 @@ html, body {
     margin-bottom: 5px;
     font-weight: 300;
     cursor: pointer;
-    transition: color 0.2s;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-.history:active { color: #fff; }
 
 .virtual-input-container {
     width: 100%;
@@ -86,15 +127,8 @@ html, body {
     padding: 0 1px;
     z-index: 10;
 }
-
-/* Syntax Highlighting */
 .char-blue { color: #8ab4f8; }
-
-/* GHOST BRACKETS */
-.ghost {
-    opacity: 0.3; 
-    pointer-events: none;
-}
+.ghost { opacity: 0.3; pointer-events: none; }
 
 .cursor {
     width: 2px;
@@ -105,11 +139,7 @@ html, body {
     margin: 0 1px;
     flex-shrink: 0;
 }
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
 .preview {
     font-size: 30px;
@@ -144,11 +174,7 @@ button {
     transition: transform 0.05s ease, background-color 0.05s ease;
     height: 100%; 
 }
-
-button:active { 
-    transform: scale(0.92);
-    background-color: #444 !important;
-}
+button:active { transform: scale(0.92); background-color: #444 !important; }
 
 .top:active { background-color: #666 !important; }
 .operator:active { background-color: #777 !important; }
@@ -156,7 +182,7 @@ button:active {
 .blue-btn:active { background-color: #adcfff !important; }
 .green-btn:active { background-color: #1e7e34 !important; } 
 
-/* BASE COLORS */
+/* COLORS */
 .operator { background: #5c525c; }
 .top { background: #4b404b; }
 .orange-btn { background: #ff9f0a; color: #202124; font-weight: 500; }
@@ -170,10 +196,17 @@ button:active {
 
 <div class="calculator">
     <div class="display" onclick="focusEnd(event)">
-        <div class="history" id="historyDisplay" onclick="restoreHistory(event)"></div>
+        <div class="history-btn" onclick="toggleHistory(event)">
+            <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        </div>
+
+        <div class="history-shelf" id="historyShelf" onclick="restoreLast(event)"></div>
         <div class="virtual-input-container" id="virtualDisplay"></div>
         <div class="preview" id="preview"></div>
     </div>
+
+    <div class="history-overlay" id="historyOverlay">
+        </div>
 
     <div class="keypad">
         <button class="orange-btn" onclick="handleTap(event, 'AC')">AC</button>
@@ -211,11 +244,13 @@ button:active {
 <script>
 let inputData = "0"; 
 let cursorIndex = 1; 
-let historyData = ""; 
+let historyStorage = []; // Stores { exp: "2+2", res: "4" }
+let lastResult = "";     // For immediate shelf
 
 const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
-const historyEl = document.getElementById("historyDisplay");
+const shelfEl = document.getElementById("historyShelf");
+const overlay = document.getElementById("historyOverlay");
 
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
@@ -223,37 +258,29 @@ const allOperators = ['+', '-', '*', '/', '^'];
 // --- AUDIO ENGINE ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let audioUnlocked = false;
-
 function unlockAudio() {
-    if (!audioUnlocked) {
-        audioCtx.resume().then(() => { audioUnlocked = true; });
-    }
+    if (!audioUnlocked) { audioCtx.resume().then(() => { audioUnlocked = true; }); }
 }
-
 function playClick(type) {
     unlockAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-
     if (type === 'error') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1200, audioCtx.currentTime); 
         gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.02); 
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.02); 
+        osc.start(); osc.stop(audioCtx.currentTime + 0.02); 
     } else {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
         gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.03);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.03);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.03);
     }
 }
 
@@ -262,13 +289,16 @@ document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: fals
 
 function handleTap(e, val) {
     if (navigator.vibrate) navigator.vibrate(5);
+    
+    // Close history if open
+    if (overlay.classList.contains('active')) toggleHistory(e);
 
     if (val === 'AC') { 
         playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
-        historyData = "";
-        historyEl.innerText = "";
+        lastResult = "";
+        shelfEl.innerText = "";
     } 
     else if (val === 'DEL') {
         playClick('click');
@@ -281,8 +311,7 @@ function handleTap(e, val) {
     else if (val === '=') { 
         const lastChar = inputData.slice(-1);
         if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
-             playClick('error'); 
-             return;
+             playClick('error'); return;
         }
         playClick('click');
         calculate(); 
@@ -308,18 +337,12 @@ function handleTap(e, val) {
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
             let end = cursorIndex;
             while (end < inputData.length && !/[+\-*\/^%√()]/.test(inputData[end])) end++;
-            const currentNumber = inputData.substring(start + 1, end);
-            if (currentNumber.includes('.')) { playClick('error'); return; }
+            if (inputData.substring(start + 1, end).includes('.')) { playClick('error'); return; }
             if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) val = "0.";
         }
 
-        if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
-            playClick('error'); return;
-        }
-
-        if (prevChar === '%' && ['^', '√', '%'].includes(val)) {
-            playClick('error'); return;
-        }
+        if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) { playClick('error'); return; }
+        if (prevChar === '%' && ['^', '√', '%'].includes(val)) { playClick('error'); return; }
 
         playClick('click');
 
@@ -331,40 +354,28 @@ function handleTap(e, val) {
             if (val !== '=') liveCalculate();
             return;
         }
-
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
             if (val === '%') return; 
             if (basicOperators.includes(val) || val === '+') {
                 inputData = inputData.slice(0, cursorIndex - 2) + val + inputData.slice(cursorIndex);
                 cursorIndex--; 
-                render();
-                liveCalculate();
-                return;
+                render(); liveCalculate(); return;
             }
         }
-
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
-            render();
-            liveCalculate();
-            return;
+            render(); liveCalculate(); return;
         }
-
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
-            if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
-                // Allowed
-            } else {
+            if (!((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-')) {
                 inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
-                render();
-                liveCalculate();
-                return;
+                render(); liveCalculate(); return;
             }
         }
 
         inputData = inputData.slice(0, cursorIndex) + val + inputData.slice(cursorIndex); 
         cursorIndex += val.length;
     }
-
     render();
     if (val !== '=') liveCalculate();
 }
@@ -375,7 +386,6 @@ function render() {
     const blueSymbols = ['+', '-', '*', '/'];
 
     if (cursorIndex === 0) html += `<span class="cursor"></span>`;
-    
     chars.forEach((char, index) => {
         let className = "char";
         if (blueSymbols.includes(char)) className += " char-blue";
@@ -383,16 +393,10 @@ function render() {
         if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
     });
 
-    // Ghost Bracket Logic
     const openCount = (inputData.match(/\(/g) || []).length;
     const closeCount = (inputData.match(/\)/g) || []).length;
     const balance = openCount - closeCount;
-
-    if (balance > 0) {
-        for (let i = 0; i < balance; i++) {
-            html += `<span class="char ghost">)</span>`;
-        }
-    }
+    if (balance > 0) { for (let i = 0; i < balance; i++) html += `<span class="char ghost">)</span>`; }
     
     container.innerHTML = html;
     const cursorEl = container.querySelector('.cursor');
@@ -406,47 +410,36 @@ function moveCursor(newIndex, e) {
 }
 
 function focusEnd(e) {
-    if(e.target.id === 'historyDisplay') return;
+    if(e.target.id === 'historyShelf' || e.target.closest('.history-btn')) return;
     const rect = container.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     cursorIndex = (clickX < rect.width / 2) ? 0 : inputData.length;
     render();
 }
 
-// --- NEW HELPER: Converts massive numbers to Scientific Notation ---
+/* --- MATH ENGINE --- */
 function toScientific(num) {
     if (num === 0) return false; 
-    if (Math.abs(num) < 1e12 && Math.abs(num) > 1e-9) return false; // Keep normal numbers normal
-    
-    let str = num.toExponential(4); // "1.2345e+20"
+    if (Math.abs(num) < 1e12 && Math.abs(num) > 1e-9) return false; 
+    let str = num.toExponential(4);
     let [base, exponent] = str.split('e');
-    
-    // Remove '+' and convert to superscripts
     exponent = exponent.replace('+', '');
     const supers = {"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
     let superExp = exponent.split('').map(c => supers[c] || c).join('');
-    
     return `${base}×10${superExp}`;
 }
 
-// --- FORMATTER: Now handles decoding superscripts back to normal ---
 function formatExpression(exp) {
-    // 1. Clean Visuals (× -> *, ÷ -> /)
     exp = exp.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
-    
-    // 2. NEW: Decode Superscripts (e.g., ¹⁴ -> ^14)
     const superMap = {"⁻":"-","⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9"};
     exp = exp.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g, (match) => {
         let normal = match.split('').map(c => superMap[c]).join('');
         return "^" + normal;
     });
-    
-    // 3. Handle Implicit Multiplication & Roots
     exp = exp.replace(/(\d)√/g, "$1*√"); 
     exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)").replace(/√\(/g, "Math.sqrt(").replace(/√/g, "Math.sqrt(");
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
     exp = exp.replace(/(\d)\(/g, "$1*(").replace(/\)(\d)/g, ")*$1").replace(/%(\d)/g, "%*$1").replace(/%/g, "/100");
-    
     return exp;
 }
 
@@ -456,9 +449,7 @@ function safeEvaluate(exp) {
     const close = (formatted.match(/\)/g) || []).length;
     if (open > close) formatted += ")".repeat(open - close);
     formatted = formatted.replace(/\^/g, "**");
-
     let result = eval(formatted);
-    // Floating Point Fix
     if (typeof result === 'number' && !Number.isInteger(result)) {
         result = parseFloat(result.toPrecision(12));
     }
@@ -468,11 +459,7 @@ function safeEvaluate(exp) {
 function liveCalculate() {
     const eqColor = (inputData === "0") ? "#ff9f0a" : "#28a745";
     const isMathMode = /[+*\/^%√()]/.test(inputData) || (inputData.lastIndexOf('-') > 0);
-    
-    if (inputData.includes('√-') || inputData === "") {
-        preview.innerText = "";
-        return;
-    }
+    if (inputData.includes('√-') || inputData === "") { preview.innerText = ""; return; }
 
     if (!isMathMode) {
         try {
@@ -488,50 +475,40 @@ function liveCalculate() {
     try {
         let result = safeEvaluate(inputData);
         let displayResult = "";
-        
         if (result !== undefined && !isNaN(result)) {
-            // NEW: Check for Scientific Formatting
             let sci = toScientific(result);
-            if (sci) {
-                displayResult = sci;
-            } else {
-                displayResult = Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
-            }
+            displayResult = sci ? sci : Number(result).toLocaleString(undefined, {maximumFractionDigits: 10});
         }
-        
         if (displayResult) {
             preview.innerHTML = `<span style="color: ${eqColor}; margin-right: 8px;">=</span>` + displayResult;
-        } else { 
-            preview.innerText = ""; 
-        }
+        } else { preview.innerText = ""; }
     } catch { preview.innerText = ""; }
 }
 
 function calculate() {
     try {
-        // 1. Check for Imaginary
         if (inputData.includes('√-') || inputData.includes('√(-')) throw "Imaginary"; 
-
         let result = safeEvaluate(inputData);
         if (isNaN(result) || result === Infinity) throw "Error";
 
-        // 2. Solidify Ghost Brackets
         const open = (inputData.match(/\(/g) || []).length;
         const close = (inputData.match(/\)/g) || []).length;
         if (open > close) inputData += ")".repeat(open - close);
 
-        // 3. Move to History
-        historyData = inputData;
-        historyEl.innerText = historyData;
-
-        // 4. Set Result (Scientific or Normal)
-        let sci = toScientific(result);
-        if (sci) {
-            inputData = sci; // Sets "1.23×10²³"
-        } else {
-            inputData = result.toString();
-        }
+        // --- NEW HISTORY LOGIC ---
+        let finalResult = toScientific(result) || result.toString();
         
+        // Save to Long Term History
+        historyStorage.push({ exp: inputData, res: finalResult });
+        if (historyStorage.length > 50) historyStorage.shift();
+        renderOverlay();
+
+        // Save to Immediate Shelf
+        lastResult = inputData;
+        shelfEl.innerText = lastResult;
+
+        // Reset Input
+        inputData = finalResult;
         cursorIndex = inputData.length;
         preview.innerText = "";
         render();
@@ -550,17 +527,47 @@ function calculate() {
     }
 }
 
-function restoreHistory(e) {
+/* --- HISTORY FUNCTIONS --- */
+function toggleHistory(e) {
+    if(e) e.stopPropagation();
+    playClick('click');
+    if (overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+    } else {
+        overlay.classList.add('active');
+    }
+}
+
+function renderOverlay() {
+    let html = "";
+    // Show newest at top of list (reverse loop)
+    for (let i = historyStorage.length - 1; i >= 0; i--) {
+        html += `
+        <div class="history-row">
+            <div class="hist-exp" onclick="restoreFromOverlay('${historyStorage[i].exp}')">${historyStorage[i].exp} =</div>
+            <div class="hist-res" onclick="restoreFromOverlay('${historyStorage[i].res}')">${historyStorage[i].res}</div>
+        </div>`;
+    }
+    overlay.innerHTML = html;
+}
+
+function restoreFromOverlay(val) {
+    playClick('click');
+    inputData = val;
+    cursorIndex = inputData.length;
+    overlay.classList.remove('active');
+    render();
+    liveCalculate();
+}
+
+function restoreLast(e) {
     e.stopPropagation(); 
-    if (historyData === "") return;
+    if (lastResult === "") return;
     playClick('click'); 
-    
-    // Swap back
-    inputData = historyData;
-    historyData = "";
-    historyEl.innerText = ""; 
+    inputData = lastResult;
+    lastResult = "";
+    shelfEl.innerText = ""; 
     cursorIndex = inputData.length; 
-    
     render();
     liveCalculate(); 
 }
