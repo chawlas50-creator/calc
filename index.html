@@ -242,10 +242,15 @@ button:active { transform: scale(0.92); background-color: #444 !important; }
 </div>
 
 <script>
+// --- 1. INITIALIZE & LOAD FROM STORAGE ---
 let inputData = "0"; 
 let cursorIndex = 1; 
-let historyStorage = []; // Stores { exp: "2+2", res: "4" }
-let lastResult = "";     // For immediate shelf
+
+// Load History Tape from "Hard Drive"
+let historyStorage = JSON.parse(localStorage.getItem('pixel_history')) || [];
+
+// Load Last Result Shelf from "Hard Drive"
+let lastResult = localStorage.getItem('pixel_shelf') || "";
 
 const container = document.getElementById("virtualDisplay");
 const preview = document.getElementById("preview");
@@ -254,6 +259,11 @@ const overlay = document.getElementById("historyOverlay");
 
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
+
+// On App Start: Restore the shelf text immediately
+if (lastResult) {
+    shelfEl.innerText = lastResult;
+}
 
 // --- AUDIO ENGINE ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -297,8 +307,12 @@ function handleTap(e, val) {
         playClick('click');
         inputData = "0"; 
         cursorIndex = 1; 
+        
+        // Clear Shelf (Visual + Storage)
         lastResult = "";
         shelfEl.innerText = "";
+        localStorage.setItem('pixel_shelf', ""); 
+        // Note: We do NOT clear the history tape (historyStorage) on AC, just like iOS.
     } 
     else if (val === 'DEL') {
         playClick('click');
@@ -498,14 +512,17 @@ function calculate() {
         // --- NEW HISTORY LOGIC ---
         let finalResult = toScientific(result) || result.toString();
         
-        // Save to Long Term History
+        // 1. Add to List
         historyStorage.push({ exp: inputData, res: finalResult });
         if (historyStorage.length > 50) historyStorage.shift();
-        renderOverlay();
+        
+        // 2. SAVE TO HARD DRIVE
+        localStorage.setItem('pixel_history', JSON.stringify(historyStorage));
 
-        // Save to Immediate Shelf
+        // 3. Save Shelf
         lastResult = inputData;
         shelfEl.innerText = lastResult;
+        localStorage.setItem('pixel_shelf', lastResult);
 
         // Reset Input
         inputData = finalResult;
@@ -534,6 +551,8 @@ function toggleHistory(e) {
     if (overlay.classList.contains('active')) {
         overlay.classList.remove('active');
     } else {
+        // RENDER ON OPEN (So it's always fresh from storage)
+        renderOverlay();
         overlay.classList.add('active');
     }
 }
@@ -565,8 +584,12 @@ function restoreLast(e) {
     if (lastResult === "") return;
     playClick('click'); 
     inputData = lastResult;
+    
+    // Clear Shelf when restored (Visual + Storage)
     lastResult = "";
     shelfEl.innerText = ""; 
+    localStorage.setItem('pixel_shelf', ""); 
+
     cursorIndex = inputData.length; 
     render();
     liveCalculate(); 
