@@ -7,6 +7,7 @@
 <title>Pixel Calculator</title>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
 
 <style>
 /* --- RESET & BASICS --- */
@@ -547,6 +548,16 @@ function restoreHistory(e) {
     render();
     liveCalculate(); 
 }
+</script>
+<script>
+  // REGISTER SERVICE WORKER
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch((err) => console.log('Service Worker Failed', err));
+    });
+  }
 </script>
 </body>
 </html>
