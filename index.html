@@ -7,7 +7,7 @@
 <title>Pixel Calculator</title>
 
 <style>
-/* RESET & BASICS */
+/* --- RESET & BASICS --- */
 * { 
     box-sizing: border-box; 
     -webkit-tap-highlight-color: rgba(0,0,0,0);
@@ -32,11 +32,11 @@ html, body {
     padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* DISPLAY AREA */
+/* --- DISPLAY AREA --- */
 .display {
     background: #2b262b;
     padding: 22px 20px;
-    height: 35vh; 
+    height: 35vh; /* Taller for History Shelf */
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -44,7 +44,7 @@ html, body {
     overflow: hidden;
 }
 
-/* HISTORY SHELF */
+/* HISTORY SHELF (The "Upward" Text) */
 .history {
     width: 100%;
     text-align: right;
@@ -86,10 +86,10 @@ html, body {
 /* Syntax Highlighting */
 .char-blue { color: #8ab4f8; }
 
-/* NEW: Ghost Bracket Style */
+/* GHOST BRACKETS (Semi-transparent) */
 .ghost {
-    opacity: 0.3; /* Transparent look */
-    pointer-events: none; /* Can't click them */
+    opacity: 0.3; 
+    pointer-events: none;
 }
 
 .cursor {
@@ -116,7 +116,7 @@ html, body {
     font-weight: 300;
 }
 
-/* KEYPAD */
+/* --- KEYPAD --- */
 .keypad {
     flex: 1;
     display: grid;
@@ -216,7 +216,7 @@ const historyEl = document.getElementById("historyDisplay");
 const basicOperators = ['+', '*', '/', '^']; 
 const allOperators = ['+', '-', '*', '/', '^'];
 
-// --- AUDIO ENGINE ---
+// --- AUDIO ENGINE (WEB AUDIO API) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let audioUnlocked = false;
 
@@ -236,6 +236,7 @@ function playClick(type) {
     gainNode.connect(audioCtx.destination);
 
     if (type === 'error') {
+        // RIGID SOUND (Blocked/Error) - 1200Hz
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1200, audioCtx.currentTime); 
         gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
@@ -243,6 +244,7 @@ function playClick(type) {
         osc.start();
         osc.stop(audioCtx.currentTime + 0.02); 
     } else {
+        // CLICK SOUND (Success) - 800Hz
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
@@ -275,6 +277,7 @@ function handleTap(e, val) {
         }
     } 
     else if (val === '=') { 
+        // HANGING OPERATOR GUARD (Block = if ends in operator)
         const lastChar = inputData.slice(-1);
         if (['+', '-', '*', '/', '^', '(', '√', '.'].includes(lastChar)) {
              playClick('error'); 
@@ -295,9 +298,11 @@ function handleTap(e, val) {
         }
     } 
     else {
+        // --- SMART INPUT LOGIC ---
         let prevChar = cursorIndex > 0 ? inputData[cursorIndex - 1] : null;
         let prevPrevChar = cursorIndex > 1 ? inputData[cursorIndex - 2] : null;
 
+        // Decimal Guard
         if (val === '.') {
             let start = cursorIndex - 1;
             while (start >= 0 && !/[+\-*\/^%√()]/.test(inputData[start])) start--;
@@ -308,16 +313,19 @@ function handleTap(e, val) {
             if (['+', '-', '*', '/', '^', '(', ')', '√', '%'].includes(prevChar)) val = "0.";
         }
 
+        // Syntax Guard (No operators after dot)
         if (prevChar === '.' && ['+', '-', '*', '/', '^', '%', '√', '(', ')'].includes(val)) {
             playClick('error'); return;
         }
 
+        // Percent Guard (No ^, √, % after %)
         if (prevChar === '%' && ['^', '√', '%'].includes(val)) {
             playClick('error'); return;
         }
 
         playClick('click');
 
+        // Initial Zero Logic
         if (inputData === "0") {
             if (basicOperators.includes(val) || val === '%') return; 
             if (val === '.') { inputData = "0."; cursorIndex = 2; } 
@@ -327,6 +335,7 @@ function handleTap(e, val) {
             return;
         }
 
+        // Triple Threat Logic
         if (allOperators.includes(prevPrevChar) && prevChar === '-') {
             if (val === '%') return; 
             if (basicOperators.includes(val) || val === '+') {
@@ -338,6 +347,7 @@ function handleTap(e, val) {
             }
         }
 
+        // Percent Swap
         if (allOperators.includes(prevChar) && val === '%') {
             inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
             render();
@@ -345,9 +355,10 @@ function handleTap(e, val) {
             return;
         }
 
+        // Operator Swap
         if (allOperators.includes(prevChar) && allOperators.includes(val)) {
             if ((prevChar === '*' || prevChar === '/' || prevChar === '^') && val === '-') {
-                // Allowed
+                // Allowed (Negative number)
             } else {
                 inputData = inputData.slice(0, cursorIndex - 1) + val + inputData.slice(cursorIndex);
                 render();
@@ -379,7 +390,7 @@ function render() {
         if (index + 1 === cursorIndex) html += `<span class="cursor"></span>`;
     });
 
-    // 2. GHOST BRACKET LOGIC
+    // 2. GHOST BRACKET LOGIC (Visual Only)
     const openCount = (inputData.match(/\(/g) || []).length;
     const closeCount = (inputData.match(/\)/g) || []).length;
     const balance = openCount - closeCount;
@@ -404,7 +415,7 @@ function moveCursor(newIndex, e) {
 }
 
 function focusEnd(e) {
-    if(e.target.id === 'historyDisplay') return;
+    if(e.target.id === 'historyDisplay') return; // Don't steal focus if clicking history
     const rect = container.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     cursorIndex = (clickX < rect.width / 2) ? 0 : inputData.length;
@@ -413,7 +424,7 @@ function focusEnd(e) {
 
 function formatExpression(exp) {
     exp = exp.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
-    exp = exp.replace(/(\d)√/g, "$1*√");
+    exp = exp.replace(/(\d)√/g, "$1*√"); // Implicit multiplication
     exp = exp.replace(/√(\d+(\.\d+)?)/g, "Math.sqrt($1)").replace(/√\(/g, "Math.sqrt(").replace(/√/g, "Math.sqrt(");
     exp = exp.replace(/(\d+(?:\.\d+)?)([\+\-])(\d+(?:\.\d+)?)%/g, "$1$2($1*$3/100)");
     exp = exp.replace(/(\d)\(/g, "$1*(").replace(/\)(\d)/g, ")*$1").replace(/%(\d)/g, "%*$1").replace(/%/g, "/100");
@@ -428,6 +439,7 @@ function safeEvaluate(exp) {
     formatted = formatted.replace(/\^/g, "**");
 
     let result = eval(formatted);
+    // Floating Point Fix
     if (typeof result === 'number' && !Number.isInteger(result)) {
         result = parseFloat(result.toPrecision(12));
     }
@@ -470,29 +482,49 @@ function liveCalculate() {
 
 function calculate() {
     try {
-        let result = safeEvaluate(inputData);
-        if (isNaN(result)) throw "Error";
+        // 1. CHECK FOR IMAGINARY NUMBERS (Fixed Regression)
+        if (inputData.includes('√-') || inputData.includes('√(-')) {
+            throw "Imaginary"; 
+        }
 
-        // --- NEW: SOLIDIFY GHOST BRACKETS ---
-        // Before moving to history, permanently append missing brackets
+        let result = safeEvaluate(inputData);
+        if (isNaN(result) || result === Infinity) throw "Error";
+
+        // 2. SOLIDIFY GHOST BRACKETS
         const open = (inputData.match(/\(/g) || []).length;
         const close = (inputData.match(/\)/g) || []).length;
         if (open > close) {
             inputData += ")".repeat(open - close);
         }
 
-        // Move to history
+        // 3. HISTORY MOVE
         historyData = inputData;
         historyEl.innerText = historyData;
 
+        // 4. SET RESULT
         inputData = result.toString();
         cursorIndex = inputData.length;
         preview.innerText = "";
         render();
 
     } catch (e) {
-        inputData = "Error";
-        setTimeout(() => { inputData = "0"; cursorIndex = 1; render(); }, 1500);
+        // ERROR HANDLING BLOCK
+        if (e === "Imaginary") {
+            inputData = "Sorry. I can't imagine numbers.";
+            setTimeout(() => { 
+                inputData = "0"; 
+                cursorIndex = 1; 
+                render(); 
+            }, 2500);
+        } else {
+            inputData = "Error";
+            setTimeout(() => { 
+                inputData = "0"; 
+                cursorIndex = 1; 
+                render(); 
+            }, 1500);
+        }
+        
         cursorIndex = 0; 
         preview.innerText = "";
         render();
@@ -503,10 +535,13 @@ function restoreHistory(e) {
     e.stopPropagation(); 
     if (historyData === "") return;
     playClick('click'); 
+    
+    // Swap back
     inputData = historyData;
     historyData = "";
     historyEl.innerText = ""; 
     cursorIndex = inputData.length; 
+    
     render();
     liveCalculate(); 
 }
